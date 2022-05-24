@@ -1,0 +1,4 @@
+[wrap-git]
+directory = IREPEAT
+url = https://github.com/willwray/IREPEAT
+revision = v0.3

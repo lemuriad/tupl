@@ -1,0 +1,4 @@
+[wrap-git]
+directory = c_array_support
+url = https://github.com/willwray/c_array_support
+revision = v0.5
