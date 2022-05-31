@@ -15,7 +15,7 @@ These properties are propagated by virtue of being a struct aggregate.
 In particular, a `tupl` is
 [*TriviallyCopyable*](https://en.cppreference.com/w/cpp/named_req/TriviallyCopyable)
 when all its elements are,  
-and this makes it cheap to pass to and return from functions
+and this makes it cheap to pass to and return from functions.
 
 ```c++
     tupl tup = { 1, 2U, "3" }; // CTAD deduces:

@@ -7,6 +7,7 @@ using namespace lml;
 struct derived_tupl : tupl<int> {};
 static_assert( tuplish<derived_tupl> );
 static_assert(! tuplish<int> );
+static_assert(! tupl_tie<tupl<> const> );
 
 template <typename T>
 constexpr std::add_const_t<T>& as_const(T& t) noexcept { return t; }
@@ -88,6 +89,9 @@ static_assert( std::same_as<tupl_assign_fwd_t<tupl<int&,long&,char&>>,
                                               tupl<int, long, char>> );
 
 static_assert( std::same_as<tupl_assign_fwd_t<tupl<int[20]>>,
+                                              tupl<int(&&)[20]>> );
+
+static_assert( std::same_as<tupl_assign_fwd_t<tupl<int(&)[20]>>,
                                               tupl<int const(&)[20]>> );
 
 static_assert( std::same_as<tupl_assign_fwd_t<tupl<c16>>,
@@ -135,7 +139,7 @@ static_assert( std::is_same_v< Tup, tupl<char[4],bool>>
             && std::is_trivially_copyable_v< Tup >
 );
 template<tupl> struct structural;
-using is_structural = structural<{"tupl"}>;
+using is_structural = structural<tupl{"tupl"}>;
 
 auto ass = []{
      tup = {"c--",false}; // copy-assigns char[4] and bool
@@ -143,6 +147,7 @@ auto ass = []{
 
 int main()
 {
+    ass();
     test_swap();
     test_refs();
 

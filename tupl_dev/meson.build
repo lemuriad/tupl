@@ -15,7 +15,7 @@ tupl_impl_header = custom_target('tupl_impl.hpp',
   input: 'tupl_impl_pre.hpp',
   output: 'tupl_impl.hpp',
   command: [meson.get_compiler('cpp').cmd_array(),
-            get_option('cpp_args'),
+            get_option('cpp_args'),'-DNAMESPACE_ID=lml',
             prepro_args, output_flag+'@OUTPUT@', '@INPUT@'],
   depfile: 'tupl_impl.d',
   install: true,
@@ -30,6 +30,7 @@ tupl_dev_dep = declare_dependency(
 
 test('test tupl',
   executable('test_tupl', 'tests/tupl_test.cpp',
+             cpp_args : ['-DTUPL_IMPL_PREPROCESS','-DNAMESPACE_ID=lml'],
              dependencies: [c_array_support_dep, tupl_dep]
             )
 )

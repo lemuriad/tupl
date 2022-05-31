@@ -2,5 +2,6 @@
 
 int main()
 {
-  return get<0>(lml::tupl{0});
+  static_assert(tuplish<tupl<int>&>);
+  return get<0>(tupl{0});
 }
