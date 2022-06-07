@@ -206,18 +206,26 @@ constexpr void swap(TUPL_ID<T...>& l, decltype(l) r)
   });
 }
 
-template <typename T> using DEFAULT_ASSIGNABLE = std::bool_constant<
-                            default_assignable<T>>;
-template <typename T> using THREE_WAY_COMPARABLE = std::bool_constant<
-                            three_way_comparable<T>>;
-template <typename T> using EQUALITY_COMPARABLE  = std::bool_constant<
-                            equality_comparable<T>>;
-template <typename T> using MEMBER_DEFAULT_3WAY  = std::bool_constant<
-                            member_default_3way<T>>;
-
-template <typename T> using ASSIGN_OVERLOAD = std::bool_constant<
+namespace impl {
+//
+template <typename T> using assign_overload = std::bool_constant<
                             assignable_from<T&,T&>
                   && ! std::assignable_from<T&,T&>>;
+//
+template <typename L, typename R>
+inline constexpr bool tupls_assignable {};
+//
+template <typename...U, typename...V>
+inline constexpr bool tupls_assignable<TUPL_ID<U...>,TUPL_ID<V...>> =
+                           (assignable_from<U&,V> && ...);
+
+template <typename T> using is_three_way_comparable = std::bool_constant
+                             < three_way_comparable<T> >;
+template <typename T> using is_equality_comparable  = std::bool_constant
+                             < equality_comparable<T> >;
+template <typename T> using is_member_default_3way  = std::bool_constant
+                             < member_default_3way<T> >;
+}
 
 // tupl<T...> size N pack specializations
 
@@ -263,16 +271,16 @@ struct TUPL_ID<TUPL_TYPE_IDS>
 
  friend auto operator<=>(TUPL_ID const&,TUPL_ID const&)
 #if NREPEAT != 0
-   requires types_all<TUPL_ID,MEMBER_DEFAULT_3WAY>
+   requires types_all<TUPL_ID,impl::is_member_default_3way>
 #endif
    = default;
 #if NREPEAT != 0
 // template<typename...>constexpr auto& operator=(std::true_type)
-//   requires (tupl_val<TUPL_ID>&&types_all<TUPL_ID,ASSIGN_OVERLOAD>)
+//   requires (tupl_val<TUPL_ID>&&types_all<TUPL_ID,assign_overload>)
 //   {return assign_to<TUPL_ID>{*this} = {};}
 
  template<typename...>constexpr auto& operator=(R_TUPL r)
-   //requires (types_all<TUPL_ID,ASSIGN_OVERLOAD>)
+   //requires (types_all<TUPL_ID,assign_overload>)
    {return assign_to{*this} = r;}
 
  template<typename...>constexpr auto& operator=(R_TUPL r) const
@@ -287,10 +295,12 @@ struct TUPL_ID<TUPL_TYPE_IDS>
 
 #else // TUPL_PASS == 2
 
-template <tuplish T> requires (! types_all<T,MEMBER_DEFAULT_3WAY>
-                              && types_all<T,THREE_WAY_COMPARABLE>)
-constexpr auto operator<=>(T const& l,T const& r) noexcept {
- constexpr auto s = T::size();
+//
+template <typename...L, typename...R>
+  requires (three_way_comparable_with<L,R> && ...)
+constexpr auto compare(TUPL_ID<L...> const& l, TUPL_ID<R...> const& r)
+noexcept{
+ constexpr auto s = sizeof...(L);
  constexpr compare_three_way cmp;
 #define MACRO(N) if constexpr(HEXLIT(N)<s){if(auto c=cmp(\
 l.TUPL_DATA_ID(N),r.TUPL_DATA_ID(N));c!=0||1+HEXLIT(N)==s)return c;}
@@ -298,22 +308,48 @@ l.TUPL_DATA_ID(N),r.TUPL_DATA_ID(N));c!=0||1+HEXLIT(N)==s)return c;}
 #undef MACRO
  UNREACHABLE();
 }
-
-template <tuplish T> requires (! types_all<T,MEMBER_DEFAULT_3WAY>
-                              && types_all<T,THREE_WAY_COMPARABLE>)
-constexpr auto operator==(T const& l,T const& r) noexcept {
-    return l <=> r == 0;
-}
-template <tuplish T> requires (! types_all<T,MEMBER_DEFAULT_3WAY>
-                            && ! types_all<T,THREE_WAY_COMPARABLE>
-                              && types_all<T,EQUALITY_COMPARABLE>)
-constexpr bool operator==(T const& l,T const& r) noexcept {
-    constexpr auto s = T::size();
+//
+template <tuplish L>
+constexpr auto compare(L const& l, tupl_assign_fwd_t<L> r) noexcept
+  { return compare(l,r); }
+//
+// equals
+//
+template <typename...L, typename...R>
+  requires (equality_comparable_with<L,R> && ...)
+constexpr auto equals(TUPL_ID<L...> const& l, TUPL_ID<R...> const& r)
+noexcept{
+  constexpr auto s = sizeof...(L);
 #define MACRO(N) if constexpr(HEXLIT(N)<s){if(bool c=\
 l.TUPL_DATA_ID(N)==r.TUPL_DATA_ID(N);!c||1+HEXLIT(N)==s)return c;}
  XREPEAT(TUPL_MAX_ARITY,MACRO,NOSEP)
 #undef MACRO
  UNREACHABLE();
+}
+//
+template <tuplish L>
+constexpr auto equals(L const& l, tupl_assign_fwd_t<L> r) noexcept
+  { return equals(l,r); }
+//
+template <tuplish T>
+  requires (! types_all<T,impl::is_member_default_3way>
+           && types_all<T,impl::is_three_way_comparable>)
+constexpr auto operator<=>(T const& l,T const& r) noexcept {
+  return compare(l,r);
+}
+
+template <tuplish T>
+  requires (! types_all<T,impl::is_member_default_3way>
+           && types_all<T,impl::is_three_way_comparable>)
+constexpr auto operator==(T const& l,T const& r) noexcept {
+    return l <=> r == 0;
+}
+template <tuplish T>
+  requires (! types_all<T,impl::is_member_default_3way>
+         && ! types_all<T,impl::is_three_way_comparable>
+           && types_all<T,impl::is_equality_comparable>)
+constexpr bool operator==(T const& l,T const& r) noexcept {
+  return equals(l,r);
 }
 
 // get<I>(t)
@@ -352,22 +388,22 @@ constexpr auto tie(T&...t) noexcept
   -> TUPL_ID<decltype(t)...> const
 {
     return { t... };
-};
+}
 
 template <int...I>
 constexpr auto getie(tuplish auto&& t) noexcept
   -> TUPL_ID<decltype(get<I>((decltype(t))t))...> const
      requires ((I < t.size()) && ...)
-    { return {get<I>((decltype(t))t)...}; };
+    { return {get<I>((decltype(t))t)...}; }
 
 template <auto...A, typename...E>
 constexpr auto dupl(TUPL_ID<E...>const& a)
   -> TUPL_ID<decltype(+get<A>(a))...>
-    { return {get<A>(a)...}; };
+    { return {get<A>(a)...}; }
 
 template <typename...A, typename...E>
 constexpr auto dupl(TUPL_ID<E...>const& a) -> TUPL_ID<A...>
-    { return {get<A>(a)...}; };
+    { return {get<A>(a)...}; }
 
 #include "IREPEAT_UNDEF.hpp"
 

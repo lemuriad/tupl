@@ -19,11 +19,5 @@ test('sanity',
              dependencies: [tupl_dep],
             )
 )
-test('tupl',
-  executable('tupl_test', 'tupl_dev/tests/test.cpp',
-             cpp_args : ['-DTUPL_IMPL_PREPROCESS','-DNAMESPACE_ID='],
-             dependencies: [tupl_dep],
-            )
-)
 
-subdir('tupl_dev')
+#subdir('tupl_dev')
