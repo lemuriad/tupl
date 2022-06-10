@@ -80,12 +80,15 @@ template <typename T>
 concept tupl_val = tuplish<T>
      && types_all<std::remove_cvref_t<T>, std::is_object>;
 //
-template <typename T> using is_const_assignable = std::bool_constant<
-   requires (all_extents_removed_t<T> const c) { c=c; }>;
+template <typename T> concept const_assignable =
+      requires (all_extents_removed_t<T> const c) { c=c; };
+//
+template <typename T> using is_const_assignable =
+            std::bool_constant<const_assignable<T>>;
 //
 template <typename T> using is_object_lval_ref =
-   std::bool_constant< std::is_lvalue_reference<T>()
-                    && std::is_object<std::remove_cvref_t<T>>()>;
+   std::bool_constant< std::is_lvalue_reference_v<T>
+                    && std::is_object_v<std::remove_cvref_t<T>>>;
 //
 // tupl_tie concept: tuplish type with all reference-to-object elements
 // (note: is_object matches unbounded array T[] so T(&)[] is admitted)
@@ -296,12 +299,28 @@ struct TUPL_ID<TUPL_TYPE_IDS>
 #else // TUPL_PASS == 2
 
 //
+// get<I>(t)
+//
+template <int I> constexpr auto&& get(tuplish auto&& t) noexcept
+  requires (I < std::remove_cvref_t<decltype(t)>::size())
+{
+ using T = decltype(t);
+#define ELSE() else
+#define MACRO(N) if constexpr(I==HEXLIT(N))return((T)t).TUPL_DATA_ID(N);
+ XREPEAT(TUPL_MAX_ARITY,MACRO,ELSE)
+#undef MACRO
+ UNREACHABLE();
+}
+//
+// compare(l,r): three-way comparison of tupls, with all <=> comparable elements
+//
 template <typename...L, typename...R>
   requires (three_way_comparable_with<L,R> && ...)
 constexpr auto compare(TUPL_ID<L...> const& l, TUPL_ID<R...> const& r)
 noexcept{
  constexpr auto s = sizeof...(L);
  constexpr compare_three_way cmp;
+ if constexpr (s==0) return cmp(0,0);
 #define MACRO(N) if constexpr(HEXLIT(N)<s){if(auto c=cmp(\
 l.TUPL_DATA_ID(N),r.TUPL_DATA_ID(N));c!=0||1+HEXLIT(N)==s)return c;}
  XREPEAT(TUPL_MAX_ARITY,MACRO,NOSEP)
@@ -313,22 +332,22 @@ template <tuplish L>
 constexpr auto compare(L const& l, tupl_assign_fwd_t<L> r) noexcept
   { return compare(l,r); }
 //
-// equals
+// equals(l,r) == comparison of tupls, with all == comparable elements
 //
 template <typename...L, typename...R>
   requires (equality_comparable_with<L,R> && ...)
-constexpr auto equals(TUPL_ID<L...> const& l, TUPL_ID<R...> const& r)
+constexpr bool equals(TUPL_ID<L...> const& l, TUPL_ID<R...> const& r)
 noexcept{
-  constexpr auto s = sizeof...(L);
-#define MACRO(N) if constexpr(HEXLIT(N)<s){if(bool c=\
-l.TUPL_DATA_ID(N)==r.TUPL_DATA_ID(N);!c||1+HEXLIT(N)==s)return c;}
- XREPEAT(TUPL_MAX_ARITY,MACRO,NOSEP)
-#undef MACRO
- UNREACHABLE();
+  return map(l, [&r](L const&...lh) {
+    return map(r, [&lh...](R const&...rh)
+    {
+      return ((lh == rh) && ...); // no short circuit, ok as intended
+    });
+  });
 }
 //
 template <tuplish L>
-constexpr auto equals(L const& l, tupl_assign_fwd_t<L> r) noexcept
+constexpr bool equals(L const& l, tupl_assign_fwd_t<L> r) noexcept
   { return equals(l,r); }
 //
 template <tuplish T>
@@ -351,20 +370,9 @@ template <tuplish T>
 constexpr bool operator==(T const& l,T const& r) noexcept {
   return equals(l,r);
 }
-
-// get<I>(t)
-template <int I> constexpr auto&& get(tuplish auto&& t) noexcept
-  requires (I < t.size())
-{
- using T = decltype(t);
-#define ELSE() else
-#define MACRO(N) if constexpr(I==HEXLIT(N))return((T)t).TUPL_DATA_ID(N);
- XREPEAT(TUPL_MAX_ARITY,MACRO,ELSE)
-#undef MACRO
- UNREACHABLE();
-}
-
+//
 // Index of first element of type X
+//
 template <typename X, typename...A> requires (std::same_as<X,A> || ...)
 inline constexpr int indexof = []() consteval {
  using std::same_as;
