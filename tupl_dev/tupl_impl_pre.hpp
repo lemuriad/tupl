@@ -69,7 +69,7 @@ template <tuplish T> constexpr auto size(T const&)
 //
 // types_all meta function
 template <typename, template <typename> class P>
-inline constexpr bool types_all = false;
+extern const bool types_all;
 //
 template <template <typename...> class Tup, typename...T,
           template <typename> class P>
@@ -81,17 +81,15 @@ template <typename T>
 concept tupl_val = tuplish<T>
      && types_all<std::remove_cvref_t<T>, std::is_object>;
 //
-template <typename T> using is_object_lval_ref =
-   std::bool_constant< std::is_lvalue_reference_v<T>
-                    && std::is_object_v<std::remove_cvref_t<T>>>;
+// tupl_tie concept: matches tupls of reference-like elements detected
+// as const-assignable; either reference-to-object assignable elements
+// or assignable proxy-references.
+// (note: const_assignable matches unbounded array reference T(&)[])
 //
-// tupl_tie concept: tuplish type with all reference-to-object elements
-// (note: is_object matches unbounded array T[] so T(&)[] is admitted)
 template <typename T>
 concept tupl_tie =
         tuplish<T>
-     && ! tupl_val<T> // eliminate empty tupl
-     && types_all<std::remove_cvref_t<T>, is_object_lval_ref>;
+     && types_all<is_const_assignable>;
 //
 // type_map<tupl<T...>, map> -> tupl<map<T>...>
 template <template <typename...> class, typename>
