@@ -89,7 +89,8 @@ concept tupl_val = tuplish<T>
 template <typename T>
 concept tupl_tie =
         tuplish<T>
-     && types_all<is_const_assignable>;
+     && ! tupl_val<T> // eliminate empty tupl
+     && types_all<std::remove_cvref_t<T>, is_const_assignable>;
 //
 // type_map<tupl<T...>, map> -> tupl<map<T>...>
 template <template <typename...> class, typename>
