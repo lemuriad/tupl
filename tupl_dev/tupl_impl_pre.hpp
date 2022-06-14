@@ -139,7 +139,7 @@ auto assign_fwd_f()
                   && sizeof(V)<=16)
         return std::type_identity<V>{};
     else
-    if constexpr (std::is_lvalue_reference_v<U>)
+    if constexpr (std::is_lvalue_reference_v<U> || is_array_v<V>)
         return std::type_identity<V const&>{};
     else
         return std::type_identity<V&&>{};
@@ -314,7 +314,8 @@ struct TUPL_ID<TUPL_TYPE_IDS>
 //
 // get<I>(t)
 //
-template <std::size_t I, tuplish T> constexpr auto&& get(T&& t) noexcept
+template <std::size_t I, tuplish T>
+  constexpr auto&& get(T&& t) noexcept
   requires (I < tupl_size<T>)
 {
  using R = T&&;
@@ -384,25 +385,49 @@ constexpr bool operator==(T const& l,T const& r) noexcept {
   return equals(l,r);
 }
 //
-// Index of first element of type X
+template <std::size_t I, typename...E>
+using type_pack_element = typename std::remove_cvref_t<decltype(
+      get<I>(TUPL_ID<std::type_identity<E>...>{}))>::type;
 //
-template <typename X, typename...A> requires (std::same_as<X,A> || ...)
-inline constexpr int indexof = []() consteval {
- using std::same_as;
- using T = TUPL_ID<A...>;
-#define TUPL_TYPE(N) decltype(T::TUPL_DATA_ID(N))
-#define MACRO(N) if constexpr(same_as<X,TUPL_TYPE(N)>)return HEXLIT(N);
- XREPEAT(TUPL_MAX_ARITY,MACRO,ELSE)
-#undef MACRO
-#undef TUPL_TYPE
-#undef ELSE
- UNREACHABLE();
+// tupl_element<I,Tupl> == type_identity<tupl_element_t>{}
+// tupl_element_t<I,Tupl> type of element I in Tupl
+//
+// (note: Tupl is instantiated, unlike std::tuple_element)
+//
+template <std::size_t I, typename T>
+struct tupl_element;
+//
+template <std::size_t I, typename T>
+using tupl_element_t = typename tupl_element<I,T>::type;
+//
+template <std::size_t I, typename...E>
+struct tupl_element<I,TUPL_ID<E...>> {
+  using type = type_pack_element<I,E...>;
+};
+//
+// tupl_indexof<X,Tupl> Index of element of type X in Tupl
+//
+template <typename X, typename T> extern const int tupl_indexof;
+//
+template <typename X, typename...E>
+inline constexpr int tupl_indexof<X,TUPL_ID<E...>> = []
+{
+  static_assert((std::same_as<X,E> + ...) == 1,
+      "get<TYPE>(tupl) error: tupl should have a single TYPE element");
+  int index = 0;
+  int count = 0;
+  ((std::same_as<X,E> ? index = count : ++count), ...);
+  return index;
 }();
 //
-template <typename X, typename T>
-inline constexpr int tupl_indexof = not defined(tupl_indexof<X,T>);
-template <typename X, typename...A>
-inline constexpr int tupl_indexof<X,TUPL_ID<A...>> = indexof<X,A...>;
+// get<T>(t)
+//
+template <typename X, tuplish T>
+constexpr auto&& get(T&& t) noexcept
+{
+  constexpr int index = tupl_indexof<X, std::remove_cvref_t<T>>;
+  return get<index>((T&&)t);
+}
 
 // tie(a,b) -> tupl<decltype(a)&, decltype(b)&>{a,b}
 //
@@ -421,16 +446,20 @@ constexpr auto getie(T&& t) noexcept
      requires ((I < tupl_size<T>) && ...)
     { return {get<I>((T&&)t)...}; }
 
+template <typename T>
+concept self_constructible = std::constructible_from<T,T>;
+
 // dupl<I...>(tupl) -> tupl{get<I>(tupl)...};
 //
-template <auto...A, typename...E>
+template <unsigned...I, typename...E>
 constexpr auto dupl(TUPL_ID<E...>const& a)
-  -> TUPL_ID<decltype(+get<A>(a))...>
-    { return {get<A>(a)...}; }
-
-template <typename...A, typename...E>
-constexpr auto dupl(TUPL_ID<E...>const& a) -> TUPL_ID<A...>
-    { return {get<A>(a)...}; }
+  -> TUPL_ID<type_pack_element<I,E...>...>
+{
+  if constexpr ((self_constructible<type_pack_element<I,E...>> && ...))
+    return {get<I>(a)...};
+  else
+    return TUPL_ID<type_pack_element<I,E...>...>{} = {get<I>(a)...};
+}
 
 #include "IREPEAT_UNDEF.hpp"
 

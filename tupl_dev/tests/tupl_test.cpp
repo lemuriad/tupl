@@ -8,6 +8,7 @@ struct derived_tupl : tupl<int> {};
 static_assert( tuplish<derived_tupl> );
 static_assert(! tuplish<int> );
 static_assert(! tupl_tie<tupl<> const> );
+static_assert(! const_assignable<tupl<>> );
 
 template <typename T>
 constexpr std::add_const_t<T>& as_const(T& t) noexcept { return t; }
@@ -89,7 +90,7 @@ static_assert( std::same_as<tupl_assign_fwd_t<tupl<int&,long&,char&>>,
                                               tupl<int, long, char>> );
 
 static_assert( std::same_as<tupl_assign_fwd_t<tupl<int[20]>>,
-                                              tupl<int(&&)[20]>> );
+                                              tupl<int const (&)[20]>> );
 
 static_assert( std::same_as<tupl_assign_fwd_t<tupl<int(&)[20]>>,
                                               tupl<int const(&)[20]>> );
@@ -156,6 +157,13 @@ int main()
     mut = {};
     //mut = {42}; // missing initializer warning
     //mut = {2,3,4}; // missing initializer warning
-    return mut <=> mut == 0
-        && mut <=> mvt > 0;
+//    return mut <=> mut == 0
+//        && mut <=> mvt > 0
+//        && compare(mut, {1,2,2}) == 0;
+    return !(mut <=> mut == 0
+//    && mut <=> mvt < 0
+    && compare(mut, mvt) < 0);
 }
+
+//constexpr tupl mu {1,2L,'3'};
+//static_assert( compare(mu, {1,2,2}) > 0 );
