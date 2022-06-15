@@ -20,4 +20,4 @@ test('sanity',
             )
 )
 
-#subdir('tupl_dev')
+subdir('tupl_dev')

@@ -57,12 +57,18 @@ bool test_refs()
 {
     int i, ii;
     const tupl<int&> ti{ i };
+    const tupl<int&> tii{ ii };
     ti = { 1 };
+    tii = ti;
+    tie(ii) = tie(i);
+    swap(tii,ti);
+    swap(tie(ii),tie(ii));
+
     long j, jj;
     char c, cc;
     tupl<int&, long&, char&> ijc{ i,j,c }; // tie
     tupl<int&, long&, char&> ijc2{ ii,jj,cc }; // tie
-    lml::swap(ijc, ijc2);
+    swap(ijc, ijc2);
     ijc = {1,2L,'d'};  // assign-through (std tuple & tie don't have this)
     auto& [x,y,z] = ijc;
   //ijc = { x, y, z }; // FAIL: selects deleted default copy-assignment
@@ -72,6 +78,7 @@ bool test_refs()
     assert(x == get<0>(ijc) && y == get<1>(ijc) && z == get<2>(ijc));
     assert(&x == &get<0>(ijc) && &y == &get<1>(ijc) && &z == &get<2>(ijc));
     assert((ijc == tupl<int&, long&, char&>{x, y, z}));
+
     return true;
 };
 
@@ -129,7 +136,9 @@ void big() {
 tupl tup = {"c++",true}; // deduces tupl<char[4],bool>
 auto& tup_copy_assign(char(&cstr)[4],bool b)
 {
-  return tup = tie(cstr,b); // copies char[4] and bool
+  assign(tup,tie(cstr,b));
+//  assign_to{tup} = {cstr,b};
+  return tup = {cstr,b};
 }
 using Tup = decltype(tup);
 
