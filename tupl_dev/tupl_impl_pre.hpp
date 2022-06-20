@@ -37,36 +37,40 @@
 
 #include "namespace.hpp" // Optional namespace, defaults to lml
 //
-inline constexpr std::size_t tupl_max_arity = HEXLIT(TUPL_MAX_ARITY);
+inline constexpr size_t tupl_max_arity = HEXLIT(TUPL_MAX_ARITY);
 //
 // tupl primary template declaration, tupl<E...>
 //
 template <typename...E> struct TUPL_ID;
 //
-// CTAD deduce values including arrays (i.e. no decay, unlike std tuple)
+// CTAD deduce values including arrays (no decay, unlike std tuple)
 //
 template <typename...E> TUPL_ID(E const&...) -> TUPL_ID<E...>;
+//
+namespace impl {
+//
+// tupl_cons adds constructors for tupl array members from array lvalues
+//
+template <typename...E> struct tupl_cons; // : tupl<E...>
+//
+template <typename...E> tupl_cons(E const&...) -> tupl_cons<E...>;
+//
+} // impl
+//
+template <typename...E> TUPL_ID(impl::tupl_cons<E...>) -> TUPL_ID<E...>;
 //
 // tuplish concept, requires T is a complete type with a member alias
 //  'tupl_t' to which T is implicitly convertible (e.g. by inheritance).
 //  Note that tuplish matches tupl with cvref qualifiers
 //
-template <typename T> concept tuplish =
-  std::is_convertible_v<T, typename std::remove_cvref_t<T>::tupl_t>;
-//template <typename T> // Alternative definition (is_convertible fail
-//concept tuplish       // on clang & stdlibc++ declval in unevaluated)
-// = requires (T v, typename std::remove_cvref_t<T>::tupl_t& u)
-//   {decltype(u)(v);}; // reference initialization implicit conversions
-//
-// type_list_size<T> the number of elements E in type list T = L<E...>
-//
-template <typename T> extern const std::size_t type_list_size;
-//
-template <template <typename...> class Tupl, typename...E>
-inline constexpr auto type_list_size<Tupl<E...>> = sizeof...(E);
-//
-// tupl_size<T> number of tupl elements, requires complete type
-//  (unrelated to std::tuple_size)
+//template <typename T> concept tuplish = std::is_convertible_v<
+//     std::remove_cvref_t<T>, typename std::remove_cvref_t<T>::tupl_t>;
+template <typename T> // Alternative definition (is_convertible fail
+concept tuplish       // on clang & stdlibc++ declval in unevaluated)
+ = requires (T v, typename std::remove_cvref_t<T>::tupl_t& u)
+   {decltype(u)(v);}; // reference initialization implicit conversions//
+// tupl_size<Tupl> number of tupl elements
+//  (requires complete type to access tupl_t typdef)
 //
 template <tuplish Tupl> inline constexpr auto tupl_size
   = type_list_size<typename std::remove_cvref_t<Tupl>::tupl_t>;
@@ -75,53 +79,14 @@ template <tuplish Tupl> inline constexpr auto tupl_size
 //
 template <tuplish T> constexpr auto size(T const&) noexcept
   { return tupl_size<T>; }
-//
-// types_all<LT,P> meta function -> (P<T>() && ...) for LT = L<T...>
-//
-template <typename LT, template <typename> class P>
-extern const bool types_all;
-//
-template <template <typename...> class L, typename...T,
-          template <typename> class P>
-inline constexpr bool types_all<L<T...>,P> = (P<T>() && ...);
-//
-// tupl_val<T> concept: tupl type with all object-type elements
-// (note: is_object matches unbounded array T[], allows for FAM)
-//
-template <typename Tupl>
-concept tupl_val
-      = tuplish<Tupl>
-     && types_all<std::remove_cvref_t<Tupl>, std::is_object>;
-//
-// tupl_tie<T> concept: matches tupl of reference-like elements detected
-// as const-assignable; either reference-to-object assignable elements
-// or assignable proxy-references.
-// (note: const_assignable matches unbounded array reference T(&)[])
-//
-template <typename T>
-concept tupl_tie
-      = tuplish<T>
-     && tupl_size<T> != 0
-     && types_all<std::remove_cvref_t<T>, is_const_assignable>;
-//
-// type_map<LT,M> -> L<M<T>...> for type list LT = L<T...>
-//
-template <template <typename...> class M, typename LT>
-struct type_map;
-//
-template <template <typename...> class M,
-          template <typename...> class L, typename...T>
-struct type_map<M, L<T...>> {
-  using type = L< M<T>... >;
-};
+
 /*
-  assign_fwd<U> 'forwarding' carrier type for assignment operator=
+  assign_fwd<U> 'forwarding' carrier type for tie assignment operator=
    -> void       for a non-assignable type (renders it incomplete)
            else V = remove_cvref_t<U> and:
    -> V          for trivially_copyable non-array V of 16 bytes or less
-   -> V const&   for lvalue_ref U or array V (no move)
-   -> V&&        otherwise (assumes rvalue move candidate)
-     (V&& won't accept V&, so either move or const_cast to V const&)
+   -> V&&        if U is rvalue_ref (expects an rvalue move candidate)
+   -> V const&   else for all other; big or non-trival V, lvalue
  or
    -> tupl_assign_fwd_t<V> for a tuplish<U>, recursive
 
@@ -152,10 +117,10 @@ auto assign_fwd_f()
                   && sizeof(V)<=16)
         return std::type_identity<V>{};
     else
-    if constexpr (std::is_lvalue_reference_v<U> || is_array_v<V>)
-        return std::type_identity<V const&>{};
+    if constexpr (std::is_rvalue_reference_v<U>)
+        return std::type_identity<U>{};
     else
-        return std::type_identity<V&&>{};
+        return std::type_identity<V const&>{};
   }
   else
     return std::type_identity<void>{};
@@ -164,22 +129,45 @@ auto assign_fwd_f()
 template <typename U>
 struct assign_fwd : decltype(impl::assign_fwd_f<U>()) {};
 //
+
+// tupl_val<T> concept: tuplish type with all elements object-type
+// and non const-assignable (which implies a proxy reference)
+// (note: is_object matches unbounded array T[], allows for FAM)
+//
+template <typename Tupl>
+concept tupl_val
+      = tuplish<Tupl>
+     && types_all<std::remove_cvref_t<Tupl>, impl::is_value>;
+//
+// tupl_tie<T> concept: matches tupl of reference-like elements detected
+// as const-assignable; either reference-to-object assignable elements
+// or assignable proxy-references.
+// (note: const_assignable matches unbounded array reference T(&)[])
+//
+template <typename T>
+concept tupl_tie
+      = tuplish<T>
+     && tupl_size<T> != 0
+     && types_all<std::remove_cvref_t<T>, is_const_assignable>;
+//
+//template <tupl_val Tupl>
 template <typename Tupl>
 using tupl_tie_t =
          typename type_map<std::add_lvalue_reference_t,Tupl>::type;
+// assignability traits for tupl extending array_assign
 //
 template <typename L, typename R, typename...>
 inline constexpr bool tupls_assignable
                     = tupls_assignable<L,R,
                       std::remove_cvref_t<L>, std::remove_cvref_t<R>>;
-
+//
 template <typename L, typename R, typename...l, typename...r>
 inline constexpr bool tupls_assignable<L,R,TUPL_ID<l...>,TUPL_ID<r...>>
-                         = (assignable_from<l&, copy_ref<R,r>> && ...);
+          = (assignable_from<apply_cv_t<L,l>&, copy_ref_t<R,r>> && ...);
 //
 template <typename l, typename r, typename R>
 inline constexpr bool noexcept_assignable = requires (l& h, r& s)
-   {requires noexcept(assign(h,(copy_ref<R,r>)s));};
+   {requires noexcept(assign(h,(copy_ref_t<R,r>)s));};
 //
 template <typename L, typename R, typename...>
 inline constexpr bool tupls_noexcept_assignable
@@ -196,63 +184,116 @@ inline constexpr bool tupls_noexcept_assignable<L,R,
 template <tuplish Lr>
 struct assign_to<Lr>
 {
-  using L = std::remove_cvref_t<Lr>;
+  using L = std::remove_reference_t<Lr>;
 
   using value_type = std::conditional_t<tupl_val<L>, L, const L>;
 
   value_type& l;
 
   template <tuplish R>
-    requires (tupls_assignable<L, R&&>)
+    requires (tupl_size<R> == tupl_size<L> && tupls_assignable<L, R&&>)
   constexpr value_type& operator=(R&& r) const noexcept(
     noexcept(tupls_noexcept_assignable<L,R&&>))
   {
-    map(l, [&r](auto&...t) {
-      map(r, [&t...](auto&...u) {
-        if constexpr (std::is_lvalue_reference_v<R>)
-          (assign(t,u), ...);
-        else
-          (assign(t,(std::remove_reference_t<decltype(u)>&&)(u)), ...);
+    if constexpr (std::is_const_v<L>)
+      [&]<typename...U>(TUPL_ID<U...>const&){
+        map(l, [&](auto&...t) {
+          map(r, [&](auto&...u) {
+            (assign(t,(U)u), ...);
+          });
+        });
+      }(r);
+    else
+      map(l, [&r](auto&...t) {
+        map(r, [&t...](auto&&...u) {
+          if constexpr (std::is_lvalue_reference_v<R>)
+            (assign(t,u), ...);
+          else
+            (assign(t,(std::remove_reference_t<decltype(u)>&&)(u)),...);
+        });
       });
-    });
+    return l;
+  }
+
+  constexpr value_type& operator=(TUPL_ID<>const&) const noexcept
+  {
+    map(l, [](auto&...t) {(assign(t,{}),...);});
     return l;
   }
 };
-
+//
+// swap(ta,tb) tupl swap specialization, including const-assignable
+//
 template <tuplish L>
 constexpr void swap(L&& l, L&& r)
   noexcept(types_all<std::remove_cvref_t<L>, std::is_nothrow_swappable>)
-    requires (types_all<std::remove_cvref_t<L>, std::is_swappable>)
+  requires(types_all<std::remove_cvref_t<L>, std::is_swappable>)
 {
   map(l, [&r](auto&...t) {
     map(r, [&t...](decltype(t)...u)
     {
-      (std::ranges::swap(t, u), ...);
+      (std::ranges::swap((apply_ref_t<L&&,decltype(t)>)t,
+                         (apply_ref_t<L&&,decltype(t)>)u), ...);
     });
   });
 }
 
 namespace impl {
 //
-template <typename T> using assign_overload = std::bool_constant<
-                            assignable_from<T&,T&>
-                  && ! std::assignable_from<T&,T&>>;
+template <typename T>
+struct lref
+{
+  T const& r;
+  constexpr lref(T& a) noexcept : r{a} {}
+  constexpr lref(std::same_as<T const> auto& a) noexcept : r{a} {}
+};
+template <typename T>
+struct rref
+{
+  T& r;
+  constexpr rref(std::same_as<T> auto&& a) noexcept : r{a} {}
+};
 //
-template <typename L, typename R>
-inline constexpr bool tupls_assignable {};
+// tupl_cons adds constructors for tupl array members from array lvalues
+// the client constrains to use this only if array members are present
 //
-template <typename...U, typename...V>
-inline constexpr bool tupls_assignable<TUPL_ID<U...>,TUPL_ID<V...>> =
-                           (assignable_from<U&,V> && ...);
+template <typename...E>
+struct tupl_cons : TUPL_ID<E...>
+{
+  using base = TUPL_ID<E...>;
 
-template <typename T> using is_three_way_comparable = std::bool_constant
-                             < three_way_comparable<T> >;
-template <typename T> using is_equality_comparable  = std::bool_constant
-                             < equality_comparable<T> >;
-template <typename T> using is_member_default_3way  = std::bool_constant
-                             < member_default_3way<T> >;
-}
+  explicit (!(default_list_initializable<E> && ...))
+  constexpr tupl_cons() = default;
 
+  // Single array element constructor
+  // Construct from ref-wrapped E to force braced copy list-init syntax,
+  // as a single operator=(auto&&) forwarding arg works without braces
+  //
+  constexpr tupl_cons(lref<E>...e)
+    noexcept(noexcept((assign(std::declval<E&>(),e.r),...)))
+    requires (sizeof...(E) == 1)
+  {
+    assign(this->x0, (e.r,...));
+  }
+  constexpr tupl_cons(rref<E>...e)
+    noexcept(noexcept((assign(std::declval<E&>(),(E&&)e.r),...)))
+    requires (sizeof...(E) == 1)
+  {
+    assign(this->x0, ((E&&)e.r,...));
+  }
+
+  // Multi element constructor, dealing with array(s)
+  //
+  template <same_ish<E>...U>
+  constexpr tupl_cons(U&&...e)
+    noexcept(noexcept((assign(std::declval<E&>(),(U&&)e),...)))
+    requires (sizeof...(U) > 1)
+  {
+    map(*(base*)this, [&](E&...l){ (assign(l,(U&&)e),...);} );
+  }
+};
+} // impl
+//
 // tupl<T...> size N pack specializations
 
 #define TUPL_TYPE_ID XD
@@ -272,6 +313,7 @@ decltype(auto) map([[maybe_unused]]T&& t, auto f) \
 noexcept(noexcept(f(__VA_ARGS__))) { return f(__VA_ARGS__); }
 
 #define R_TUPL tupl_assign_fwd_t<TUPL_ID>
+#define C_TUPL impl::tupl_cons<TUPL_TYPE_IDS>
 
 #define TUPL_PASS 1
 #define VREPEAT_COUNT TUPL_MAX_ARITY
@@ -283,43 +325,40 @@ noexcept(noexcept(f(__VA_ARGS__))) { return f(__VA_ARGS__); }
 #include __FILE__
 
 #elif (TUPL_PASS == 1)
-
+//
 template <TYPENAME_DECLS>
 struct TUPL_ID<TUPL_TYPE_IDS>
 {
-// using tie_t = TUPL_TIE_T const;
  using tupl_t = TUPL_ID;
-
- MEMBER_DECLS
-
- static constexpr std::integral_constant<std::size_t,NREPEAT> size{};
-
+MEMBER_DECLS
+//
  friend auto operator<=>(TUPL_ID const&,TUPL_ID const&)
 #if NREPEAT != 0
-   requires types_all<TUPL_ID,impl::is_member_default_3way>
+   requires types_all<TUPL_ID,is_member_default_3way>
 #endif
    = default;
 #if NREPEAT != 0
-// template<typename...>constexpr auto& operator=(std::true_type)
-//   requires (tupl_val<TUPL_ID>&&types_all<TUPL_ID,assign_overload>)
-//   {return assign_to<TUPL_ID>{*this} = {};}
-
- template<typename...>constexpr auto& operator=(R_TUPL r)
-   noexcept(noexcept(assign_to{*this} = r))
-   //requires (types_all<TUPL_ID,assign_overload>)
-   {return assign_to{*this} = r;}
-
+//
+ template<typename...>constexpr auto& operator=(C_TUPL r)
+   noexcept(noexcept(*this = static_cast<TUPL_ID&&>(r)))
+   requires ( types_all<TUPL_ID, impl::is_value>
+         && ! types_all<TUPL_ID, impl::is_direct_initialized>)
+   {return *this = static_cast<TUPL_ID&&>(r);}
+//
  template<typename...>constexpr auto& operator=(R_TUPL r) const
    noexcept(noexcept(assign_to{*this} = r))
-   requires (types_all<TUPL_ID,is_const_assignable>)
+   requires (types_all<TUPL_ID, is_const_assignable>)
    {return assign_to{*this} = r;}
-
+//
  template<typename T> constexpr auto& operator=(T&& r) const
-   noexcept(noexcept(assign_to{*this} = (decltype(r)&&)r))
-     requires (std::same_as<tupl_tie_t<TUPL_ID>,TUPL_ID>
-            && std::same_as<std::remove_cvref_t<T>,TUPL_ID>)
-   {return assign_to{*this} = (decltype(r)&&)r;}
-
+   noexcept(noexcept(assign_to{*this} = r))
+     requires (tupl_size<T> == tupl_size<TUPL_ID>
+           &&  tupls_assignable<TUPL_ID const,std::remove_cvref_t<T>>)
+   {return assign_to{*this} = r;}
+//
+ template<typename...>constexpr auto& operator=(TUPL_ID<>) const
+   requires (types_all<TUPL_ID, is_const_assignable>)
+   {return assign_to{*this} = TUPL_ID<>{};}
 #endif
  MAP_V(TUPL_t_DATA_FWDS)
 };
@@ -329,7 +368,7 @@ struct TUPL_ID<TUPL_TYPE_IDS>
 //
 // get<I>(t)
 //
-template <std::size_t I, tuplish T>
+template <size_t I, tuplish T>
   constexpr auto&& get(T&& t) noexcept
   requires (I < tupl_size<T>)
 {
@@ -382,8 +421,8 @@ constexpr bool equals(L const& l, tupl_assign_fwd_t<L> r) noexcept
 // operator<=> overload, when possible and not defaulted
 //
 template <tuplish T>
-  requires (! types_all<T,impl::is_member_default_3way>
-           && types_all<T,impl::is_three_way_comparable>)
+  requires (! types_all<T, is_member_default_3way>
+           && types_all<T, is_three_way_comparable>)
 constexpr auto operator<=>(T const& l,T const& r) noexcept {
   return compare(l,r);
 }
@@ -392,53 +431,34 @@ constexpr auto operator<=>(T const& l,T const& r) noexcept {
 // (Test that these overload are not ambiguous)
 //
 template <tuplish T>
-  requires (! types_all<T,impl::is_member_default_3way>
-           && types_all<T,impl::is_three_way_comparable>)
+  requires (! types_all<T, is_member_default_3way>
+           && types_all<T, is_three_way_comparable>)
 constexpr auto operator==(T const& l,T const& r) noexcept {
     return l <=> r == 0;
 }
 //
 template <tuplish T>
-  requires (! types_all<T,impl::is_member_default_3way>
-         && ! types_all<T,impl::is_three_way_comparable>
-           && types_all<T,impl::is_equality_comparable>)
+  requires (! types_all<T, is_member_default_3way>
+         && ! types_all<T, is_three_way_comparable>
+           && types_all<T, is_equality_comparable>)
 constexpr bool operator==(T const& l,T const& r) noexcept {
   return equals(l,r);
 }
 //
-template <std::size_t I, typename...E>
-using type_pack_element = typename std::remove_cvref_t<decltype(
-      get<I>(TUPL_ID<std::type_identity<E>...>{}))>::type;
-//
+
 // tupl_element<I,Tupl> == type_identity<tupl_element_t>{}
 // tupl_element_t<I,Tupl> type of element I in Tupl
 //
-// (note: Tupl is instantiated, unlike std::tuple_element)
-//
-template <std::size_t I, typename T>
+template <size_t I, typename T>
 struct tupl_element;
 //
-template <std::size_t I, typename T>
+template <size_t I, typename T>
 using tupl_element_t = typename tupl_element<I,T>::type;
 //
-template <std::size_t I, typename...E>
+template <size_t I, typename...E>
 struct tupl_element<I,TUPL_ID<E...>> {
   using type = type_pack_element<I,E...>;
 };
-//
-// type_pack_indexof<X,E...> Index of element of type X in pack E...
-// Fails with a static_assert if there's no X or multiple Xs in E...
-//
-template <typename X, typename...E>
-inline constexpr int type_pack_indexof = []
-{
-  static_assert((std::same_as<X,E> + ...) == 1,
-      "get<TYPE>(tupl) error: tupl should have a single TYPE element");
-  int index = 0;
-  int count = 0;
-  ((std::same_as<X,E> ? index = count : ++count), ...);
-  return index;
-}();
 //
 // tupl_indexof<X,Tupl> Index of element of type X in Tupl
 //
@@ -460,9 +480,16 @@ constexpr auto&& get(T&& t) noexcept
 //
 template <typename...T>
 constexpr auto tie(T&...t) noexcept
-  -> TUPL_ID<decltype(t)...> const
+  -> TUPL_ID<T&...> const
 {
     return { t... };
+}
+//
+template <typename...T>
+constexpr auto tie_fwd(T&&...t) noexcept
+  -> TUPL_ID<T&&...> const
+{
+    return { (T&&)t... };
 }
 //
 // getie<I...>(tupl) -> tie(get<I>(tupl)...)
@@ -499,10 +526,10 @@ constexpr auto tupl_cat(T&& t, U&& u)
     {
       if constexpr ((self_constructible<Ts> && ...)
                  && (self_constructible<Us> && ...))
-        return {(copy_cvref<T&&,Ts>)ts...,(copy_cvref<U&&,Us>)us...};
+        return{(copy_cvref_t<T&&,Ts>)ts...,(copy_cvref_t<U&&,Us>)us...};
       else
         return tupl<Ts...,Us...>{} // requires all default construtible
-             = {(copy_cvref<T&&,Ts>)ts...,(copy_cvref<U&&,Us>)us...};
+            = {(copy_cvref_t<T&&,Ts>)ts...,(copy_cvref_t<U&&,Us>)us...};
     });
   });
 }

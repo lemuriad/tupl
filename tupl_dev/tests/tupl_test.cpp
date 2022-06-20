@@ -106,7 +106,7 @@ static_assert( std::same_as<tupl_assign_fwd_t<tupl<c16>>,
                                               tupl<c16>> );
 
 static_assert( std::same_as<tupl_assign_fwd_t<tupl<BIG>>,
-                                              tupl<BIG&&>> );
+                                              tupl<BIG const&>> );
 
 void big() {
     tupl c {c16{}};

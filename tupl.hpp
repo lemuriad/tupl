@@ -27,13 +27,6 @@
   member comparison and assignment, alongside other regular types.
 */
 
-#include "array_compare.hpp"
-#include "array_assign.hpp"
-
-// same_ish<T,U> concept utility (should be in some util lib or std)
-template <typename T, typename U>
-concept same_ish = std::same_as<U, std::remove_cvref_t<T>>;
-
 // UNREACHABLE: platform-specific annotation for unreachable code
 // till there's a portable or standardized annotation (c.f. P2390 P0627)
 #ifdef __GNUC__
@@ -43,6 +36,8 @@ concept same_ish = std::same_as<U, std::remove_cvref_t<T>>;
 #else
 #define UNREACHABLE()
 #endif
+
+#include "tupl_traits.hpp"
 
 // The header "tupl_impl.hpp" as provided is limited to 'arity' 16.
 // If tupl_dev/tupl_impl.hpp exists then is included instead.
