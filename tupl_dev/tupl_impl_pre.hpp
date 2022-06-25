@@ -69,11 +69,17 @@ template <typename T> // Alternative definition (is_convertible fail
 concept tuplish       // on clang & stdlibc++ declval in unevaluated)
  = requires (T v, typename std::remove_cvref_t<T>::tupl_t& u)
    {decltype(u)(v);}; // reference initialization implicit conversions//
+//
+// tupl_t<Tupl> alias of the member typedef tupl_t
+//
+template <tuplish Tupl>
+using tupl_t = typename std::remove_cvref_t<Tupl>::tupl_t;
+//
 // tupl_size<Tupl> number of tupl elements
 //  (requires complete type to access tupl_t typdef)
 //
 template <tuplish Tupl> inline constexpr auto tupl_size
-  = type_list_size<typename std::remove_cvref_t<Tupl>::tupl_t>;
+  = type_list_size<tupl_t<Tupl>>;
 //
 // size(tupl) the number of tupl elements
 //
@@ -82,11 +88,11 @@ template <tuplish T> constexpr auto size(T const&) noexcept
 
 /*
   assign_fwd<U> 'forwarding' carrier type for tie assignment operator=
-   -> void       for a non-assignable type (renders it incomplete)
-           else V = remove_cvref_t<U> and:
+   -> void       for a non-assignable type (renders tupl<X> incomplete)
+           else using V = remove_cvref_t<U>:
    -> V          for trivially_copyable non-array V of 16 bytes or less
    -> V&&        if U is rvalue_ref (expects an rvalue move candidate)
-   -> V const&   else for all other; big or non-trival V, lvalue
+   -> V const&   else for all other; lvalue-ref, big or non-trival V
  or
    -> tupl_assign_fwd_t<V> for a tuplish<U>, recursive
 
@@ -137,18 +143,18 @@ struct assign_fwd : decltype(impl::assign_fwd_f<U>()) {};
 template <typename Tupl>
 concept tupl_val
       = tuplish<Tupl>
-     && types_all<std::remove_cvref_t<Tupl>, impl::is_value>;
+     && types_all<tupl_t<Tupl>, impl::is_value>;
 //
 // tupl_tie<T> concept: matches tupl of reference-like elements detected
 // as const-assignable; either reference-to-object assignable elements
 // or assignable proxy-references.
 // (note: const_assignable matches unbounded array reference T(&)[])
 //
-template <typename T>
+template <typename Tupl>
 concept tupl_tie
-      = tuplish<T>
-     && tupl_size<T> != 0
-     && types_all<std::remove_cvref_t<T>, is_const_assignable>;
+      = tuplish<Tupl>
+     && tupl_size<Tupl> != 0
+     && types_all<tupl_t<Tupl>, is_const_assignable>;
 //
 //template <tupl_val Tupl>
 template <typename Tupl>
@@ -156,10 +162,10 @@ using tupl_tie_t =
          typename type_map<std::add_lvalue_reference_t,Tupl>::type;
 // assignability traits for tupl extending array_assign
 //
-template <typename L, typename R, typename...>
+template <tuplish L, tuplish R, typename...>
+  requires (tupl_size<L> == tupl_size<R>)
 inline constexpr bool tupls_assignable
-                    = tupls_assignable<L,R,
-                      std::remove_cvref_t<L>, std::remove_cvref_t<R>>;
+                    = tupls_assignable<L,R, tupl_t<L>, tupl_t<R>>;
 //
 template <typename L, typename R, typename...l, typename...r>
 inline constexpr bool tupls_assignable<L,R,TUPL_ID<l...>,TUPL_ID<r...>>
@@ -169,10 +175,9 @@ template <typename l, typename r, typename R>
 inline constexpr bool noexcept_assignable = requires (l& h, r& s)
    {requires noexcept(assign(h,(copy_ref_t<R,r>)s));};
 //
-template <typename L, typename R, typename...>
+template <tuplish L, tuplish R, typename...>
 inline constexpr bool tupls_noexcept_assignable
-                    = tupls_noexcept_assignable<L,R,
-                      std::remove_cvref_t<L>, std::remove_cvref_t<R>>;
+                    = tupls_noexcept_assignable<L,R,tupl_t<L>,tupl_t<R>>;
 
 template <typename L, typename R, typename...l, typename...r>
 inline constexpr bool tupls_noexcept_assignable<L,R,
@@ -191,7 +196,7 @@ struct assign_to<Lr>
   value_type& l;
 
   template <tuplish R>
-    requires (tupl_size<R> == tupl_size<L> && tupls_assignable<L, R&&>)
+    requires (tupls_assignable<L, R&&>)
   constexpr value_type& operator=(R&& r) const noexcept(
     noexcept(tupls_noexcept_assignable<L,R&&>))
   {
@@ -226,8 +231,8 @@ struct assign_to<Lr>
 //
 template <tuplish L>
 constexpr void swap(L&& l, L&& r)
-  noexcept(types_all<std::remove_cvref_t<L>, std::is_nothrow_swappable>)
-  requires(types_all<std::remove_cvref_t<L>, std::is_swappable>)
+  noexcept(types_all<tupl_t<L>, std::is_nothrow_swappable>)
+  requires(types_all<tupl_t<L>, std::is_swappable>)
 {
   map(l, [&r](auto&...t) {
     map(r, [&t...](decltype(t)...u)
@@ -350,10 +355,9 @@ MEMBER_DECLS
    requires (types_all<TUPL_ID, is_const_assignable>)
    {return assign_to{*this} = r;}
 //
- template<typename T> constexpr auto& operator=(T&& r) const
+ template<tuplish T> constexpr auto& operator=(T&& r) const
    noexcept(noexcept(assign_to{*this} = r))
-     requires (tupl_size<T> == tupl_size<TUPL_ID>
-           &&  tupls_assignable<TUPL_ID const,std::remove_cvref_t<T>>)
+     requires (tupls_assignable<TUPL_ID const, NAMESPACE_ID::tupl_t<T>>)
    {return assign_to{*this} = r;}
 //
  template<typename...>constexpr auto& operator=(TUPL_ID<>) const
@@ -421,8 +425,8 @@ constexpr bool equals(L const& l, tupl_assign_fwd_t<L> r) noexcept
 // operator<=> overload, when possible and not defaulted
 //
 template <tuplish T>
-  requires (! types_all<T, is_member_default_3way>
-           && types_all<T, is_three_way_comparable>)
+  requires (! types_all<tupl_t<T>, is_member_default_3way>
+           && types_all<tupl_t<T>, is_three_way_comparable>)
 constexpr auto operator<=>(T const& l,T const& r) noexcept {
   return compare(l,r);
 }
@@ -431,16 +435,16 @@ constexpr auto operator<=>(T const& l,T const& r) noexcept {
 // (Test that these overload are not ambiguous)
 //
 template <tuplish T>
-  requires (! types_all<T, is_member_default_3way>
-           && types_all<T, is_three_way_comparable>)
+  requires (! types_all<tupl_t<T>, is_member_default_3way>
+           && types_all<tupl_t<T>, is_three_way_comparable>)
 constexpr auto operator==(T const& l,T const& r) noexcept {
     return l <=> r == 0;
 }
 //
 template <tuplish T>
-  requires (! types_all<T, is_member_default_3way>
-         && ! types_all<T, is_three_way_comparable>
-           && types_all<T, is_equality_comparable>)
+  requires (! types_all<tupl_t<T>, is_member_default_3way>
+         && ! types_all<tupl_t<T>, is_three_way_comparable>
+           && types_all<tupl_t<T>, is_equality_comparable>)
 constexpr bool operator==(T const& l,T const& r) noexcept {
   return equals(l,r);
 }
@@ -473,7 +477,7 @@ inline constexpr int tupl_indexof<X,TUPL_ID<E...>>
 template <typename X, tuplish T>
 constexpr auto&& get(T&& t) noexcept
 {
-  return get<tupl_indexof<X, std::remove_cvref_t<T>>>((T&&)t);
+  return get<tupl_indexof<X, tupl_t<T>>>((T&&)t);
 }
 //
 // tie(a,b) -> tupl<decltype(a)&, decltype(b)&>{a,b}
