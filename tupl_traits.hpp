@@ -80,27 +80,27 @@ template <size_t I, template<typename> typename W,
   typename...T>
 consteval auto type_pack_element()
 {
-  if constexpr (I < 0x10) {
-         if constexpr (I==0x0) return W<X0>{};
-    else if constexpr (I==0x1) return W<X1>{};
-    else if constexpr (I==0x2) return W<X2>{};
-    else if constexpr (I==0x3) return W<X3>{};
-    else if constexpr (I==0x4) return W<X4>{};
-    else if constexpr (I==0x5) return W<X5>{};
-    else if constexpr (I==0x6) return W<X6>{};
-    else if constexpr (I==0x7) return W<X7>{};
-    else if constexpr (I==0x8) return W<X8>{};
-    else if constexpr (I==0x9) return W<X9>{};
-    else if constexpr (I==0xa) return W<Xa>{};
-    else if constexpr (I==0xb) return W<Xb>{};
-    else if constexpr (I==0xc) return W<Xc>{};
-    else if constexpr (I==0xd) return W<Xd>{};
-    else if constexpr (I==0xe) return W<Xe>{};
-    else if constexpr (I==0xf) return W<Xf>{};
-    UNREACHABLE();
+  switch (I)
+  {
+  case 0x0: if constexpr (I==0x0) return W<X0>{}; UNREACHABLE();
+  case 0x1: if constexpr (I==0x1) return W<X1>{}; UNREACHABLE();
+  case 0x2: if constexpr (I==0x2) return W<X2>{}; UNREACHABLE();
+  case 0x3: if constexpr (I==0x3) return W<X3>{}; UNREACHABLE();
+  case 0x4: if constexpr (I==0x4) return W<X4>{}; UNREACHABLE();
+  case 0x5: if constexpr (I==0x5) return W<X5>{}; UNREACHABLE();
+  case 0x6: if constexpr (I==0x6) return W<X6>{}; UNREACHABLE();
+  case 0x7: if constexpr (I==0x7) return W<X7>{}; UNREACHABLE();
+  case 0x8: if constexpr (I==0x8) return W<X8>{}; UNREACHABLE();
+  case 0x9: if constexpr (I==0x9) return W<X9>{}; UNREACHABLE();
+  case 0xa: if constexpr (I==0xa) return W<Xa>{}; UNREACHABLE();
+  case 0xb: if constexpr (I==0xb) return W<Xb>{}; UNREACHABLE();
+  case 0xc: if constexpr (I==0xc) return W<Xc>{}; UNREACHABLE();
+  case 0xd: if constexpr (I==0xd) return W<Xd>{}; UNREACHABLE();
+  case 0xe: if constexpr (I==0xe) return W<Xe>{}; UNREACHABLE();
+  case 0xf: if constexpr (I==0xf) return W<Xf>{}; UNREACHABLE();
+  default: if constexpr (I>=0x10)
+             return type_pack_element<I - 0x10, W, T...>();
   }
-  else
-    return type_pack_element<I - 0x10, W, T...>();
 }
 } // impl
 #define TYPEPACKEL(I,...) typename decltype(impl::type_pack_element<I, \
