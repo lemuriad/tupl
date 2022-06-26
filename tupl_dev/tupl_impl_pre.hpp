@@ -25,7 +25,8 @@
 #define TUPL_MAX_ARITY (1)(0) // specified as parenthesized hex digits
 #endif
 
-#ifndef TUPL_NUA // TUPL_NUA : define empty to disable no_unique_address
+#ifndef TUPL_NUA /* TUPL_NUA : define empty to disable no_unique_address
+       define as [[msvc::no_unique_address]] to correct MSVC behaviour*/
 #define TUPL_NUA [[no_unique_address]]
 #endif
 
@@ -301,13 +302,12 @@ struct tupl_cons : tupl<E...>
 #define TUPL_DATA_ID xD
 #define TYPENAME_DECL(n) typename TUPL_TYPE_ID(n)
 #define TUPL_t_DATA_FWD(n) ((T&&)t).TUPL_DATA_ID(n)
-#define MEMBER_DECL(n) TUPL_NUA TUPL_TYPE_ID(n) TUPL_DATA_ID(n);
+#define MEMBER_DECL(n) TUPL_TYPE_ID(n) TUPL_DATA_ID(n);
 
 #define TUPL_TYPE_IDS XREPEAT(VREPEAT_INDEX,TUPL_TYPE_ID,COMMA)
 #define TUPL_DATA_IDS XREPEAT(VREPEAT_INDEX,TUPL_DATA_ID,COMMA)
 #define TYPENAME_DECLS XREPEAT(VREPEAT_INDEX,TYPENAME_DECL,COMMA)
 #define TUPL_t_DATA_FWDS XREPEAT(VREPEAT_INDEX,TUPL_t_DATA_FWD,COMMA)
-#define MEMBER_DECLS XREPEAT(VREPEAT_INDEX,MEMBER_DECL,NOSEP)
 
 #define MAP_V(...) template <same_ish<tupl> T> friend constexpr \
 decltype(auto) map([[maybe_unused]]T&& t, auto f) \
@@ -331,7 +331,7 @@ template <TYPENAME_DECLS>
 struct tupl<TUPL_TYPE_IDS>
 {
  using tupl_t = tupl;
-MEMBER_DECLS
+ XREPEAT(VREPEAT_INDEX,TUPL_NUA MEMBER_DECL,NOSEP) // NUA MEMBER DECLS
 //
  friend auto operator<=>(tupl const&,tupl const&)
 #if NREPEAT != 0
@@ -539,7 +539,6 @@ constexpr auto tupl_cat(T&& t, U&& u)
 #undef R_TUPL
 #undef MAP_V
 
-#undef MEMBER_DECLS
 #undef TUPL__t_DATA_FWDS
 #undef TYPENAME_DECLS
 #undef TUPL_DATA_IDS
