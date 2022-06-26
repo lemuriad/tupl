@@ -21,10 +21,6 @@
 #include "tupl_impl_noedit_warn.hpp"           // the generated file
 #endif                                         // "Don't edit this!"
 
-#ifndef TUPL_ID      // TUPL_ID = your name for the tuple template id
-#define TUPL_ID tupl // E.g. configure with -DTUPL_ID=tuple
-#endif
-
 #ifndef TUPL_MAX_ARITY        // TUPL_MAX_ARITY = max number of elements
 #define TUPL_MAX_ARITY (1)(0) // specified as parenthesized hex digits
 #endif
@@ -41,11 +37,11 @@ inline constexpr size_t tupl_max_arity = HEXLIT(TUPL_MAX_ARITY);
 //
 // tupl primary template declaration, tupl<E...>
 //
-template <typename...E> struct TUPL_ID;
+template <typename...E> struct tupl;
 //
 // CTAD deduce values including arrays (no decay, unlike std tuple)
 //
-template <typename...E> TUPL_ID(E const&...) -> TUPL_ID<E...>;
+template <typename...E> tupl(E const&...) -> tupl<E...>;
 //
 namespace impl {
 //
@@ -57,7 +53,7 @@ template <typename...E> tupl_cons(E const&...) -> tupl_cons<E...>;
 //
 } // impl
 //
-template <typename...E> TUPL_ID(impl::tupl_cons<E...>) -> TUPL_ID<E...>;
+template <typename...E> tupl(impl::tupl_cons<E...>) -> tupl<E...>;
 //
 // tuplish concept, requires T is a complete type with a member alias
 //  'tupl_t' to which T is implicitly convertible (e.g. by inheritance).
@@ -168,7 +164,7 @@ inline constexpr bool tupls_assignable
                     = tupls_assignable<L,R, tupl_t<L>, tupl_t<R>>;
 //
 template <typename L, typename R, typename...l, typename...r>
-inline constexpr bool tupls_assignable<L,R,TUPL_ID<l...>,TUPL_ID<r...>>
+inline constexpr bool tupls_assignable<L,R,tupl<l...>,tupl<r...>>
           = (assignable_from<apply_cv_t<L,l>&, copy_ref_t<R,r>> && ...);
 //
 template <typename l, typename r, typename R>
@@ -181,7 +177,7 @@ inline constexpr bool tupls_noexcept_assignable
 
 template <typename L, typename R, typename...l, typename...r>
 inline constexpr bool tupls_noexcept_assignable<L,R,
-                                     TUPL_ID<l...>,TUPL_ID<r...>>
+                                     tupl<l...>,tupl<r...>>
                          = (noexcept_assignable<l,r,R> && ...);
 //
 // assign_to<tupL> customization for tuple-tuple assignment
@@ -201,7 +197,7 @@ struct assign_to<Lr>
     noexcept(tupls_noexcept_assignable<L,R&&>))
   {
     if constexpr (std::is_const_v<L>)
-      [&]<typename...U>(TUPL_ID<U...>const&){
+      [&]<typename...U>(tupl<U...>const&){
         map(l, [&](auto&...t) {
           map(r, [&](auto&...u) {
             (assign(t,(U)u), ...);
@@ -220,7 +216,7 @@ struct assign_to<Lr>
     return l;
   }
 
-  constexpr value_type& operator=(TUPL_ID<>const&) const noexcept
+  constexpr value_type& operator=(tupl<>const&) const noexcept
   {
     map(l, [](auto&...t) {(assign(t,{}),...);});
     return l;
@@ -263,9 +259,9 @@ struct rref
 // the client constrains to use this only if array members are present
 //
 template <typename...E>
-struct tupl_cons : TUPL_ID<E...>
+struct tupl_cons : tupl<E...>
 {
-  using base = TUPL_ID<E...>;
+  using base = tupl<E...>;
 
   explicit (!(default_list_initializable<E> && ...))
   constexpr tupl_cons() = default;
@@ -313,11 +309,11 @@ struct tupl_cons : TUPL_ID<E...>
 #define TUPL_t_DATA_FWDS XREPEAT(VREPEAT_INDEX,TUPL_t_DATA_FWD,COMMA)
 #define MEMBER_DECLS XREPEAT(VREPEAT_INDEX,MEMBER_DECL,NOSEP)
 
-#define MAP_V(...) template <same_ish<TUPL_ID> T> friend constexpr \
+#define MAP_V(...) template <same_ish<tupl> T> friend constexpr \
 decltype(auto) map([[maybe_unused]]T&& t, auto f) \
 noexcept(noexcept(f(__VA_ARGS__))) { return f(__VA_ARGS__); }
 
-#define R_TUPL tupl_assign_fwd_t<TUPL_ID>
+#define R_TUPL tupl_assign_fwd_t<tupl>
 #define C_TUPL impl::tupl_cons<TUPL_TYPE_IDS>
 
 #define TUPL_PASS 1
@@ -332,37 +328,37 @@ noexcept(noexcept(f(__VA_ARGS__))) { return f(__VA_ARGS__); }
 #elif (TUPL_PASS == 1)
 //
 template <TYPENAME_DECLS>
-struct TUPL_ID<TUPL_TYPE_IDS>
+struct tupl<TUPL_TYPE_IDS>
 {
- using tupl_t = TUPL_ID;
+ using tupl_t = tupl;
 MEMBER_DECLS
 //
- friend auto operator<=>(TUPL_ID const&,TUPL_ID const&)
+ friend auto operator<=>(tupl const&,tupl const&)
 #if NREPEAT != 0
-   requires types_all<TUPL_ID,is_member_default_3way>
+   requires types_all<tupl,is_member_default_3way>
 #endif
    = default;
 #if NREPEAT != 0
 //
  template<typename...>constexpr auto& operator=(C_TUPL r)
-   noexcept(noexcept(*this = static_cast<TUPL_ID&&>(r)))
-   requires ( types_all<TUPL_ID, impl::is_value>
-         && ! types_all<TUPL_ID, impl::is_direct_initialized>)
-   {return *this = static_cast<TUPL_ID&&>(r);}
+   noexcept(noexcept(*this = static_cast<tupl&&>(r)))
+   requires ( types_all<tupl, impl::is_value>
+         && ! types_all<tupl, impl::is_direct_initialized>)
+   {return *this = static_cast<tupl&&>(r);}
 //
  template<typename...>constexpr auto& operator=(R_TUPL r) const
    noexcept(noexcept(assign_to{*this} = r))
-   requires (types_all<TUPL_ID, is_const_assignable>)
+   requires (types_all<tupl, is_const_assignable>)
    {return assign_to{*this} = r;}
 //
  template<tuplish T> constexpr auto& operator=(T&& r) const
    noexcept(noexcept(assign_to{*this} = r))
-     requires (tupls_assignable<TUPL_ID const, NAMESPACE_ID::tupl_t<T>>)
+     requires (tupls_assignable<tupl const, NAMESPACE_ID::tupl_t<T>>)
    {return assign_to{*this} = r;}
 //
- template<typename...>constexpr auto& operator=(TUPL_ID<>) const
-   requires (types_all<TUPL_ID, is_const_assignable>)
-   {return assign_to{*this} = TUPL_ID<>{};}
+ template<typename...>constexpr auto& operator=(tupl<>) const
+   requires (types_all<tupl, is_const_assignable>)
+   {return assign_to{*this} = tupl<>{};}
 #endif
  MAP_V(TUPL_t_DATA_FWDS)
 };
@@ -388,7 +384,7 @@ template <size_t I, tuplish T>
 //
 template <typename...L, typename...R>
   requires (three_way_comparable_with<L,R> && ...)
-constexpr auto compare(TUPL_ID<L...> const& l, TUPL_ID<R...> const& r)
+constexpr auto compare(tupl<L...> const& l, tupl<R...> const& r)
 noexcept{
  constexpr auto s = sizeof...(L);
  constexpr compare_three_way cmp;
@@ -408,7 +404,7 @@ constexpr auto compare(L const& l, tupl_assign_fwd_t<L> r) noexcept
 //
 template <typename...L, typename...R>
   requires (equality_comparable_with<L,R> && ...)
-constexpr bool equals(TUPL_ID<L...> const& l, TUPL_ID<R...> const& r)
+constexpr bool equals(tupl<L...> const& l, tupl<R...> const& r)
 noexcept{
   return map(l, [&r](L const&...lh) {
     return map(r, [&lh...](R const&...rh)
@@ -460,7 +456,7 @@ template <size_t I, typename T>
 using tupl_element_t = typename tupl_element<I,T>::type;
 //
 template <size_t I, typename...E>
-struct tupl_element<I,TUPL_ID<E...>> {
+struct tupl_element<I,tupl<E...>> {
   using type = type_pack_element<I,E...>;
 };
 //
@@ -469,7 +465,7 @@ struct tupl_element<I,TUPL_ID<E...>> {
 template <typename X, typename T> extern const int tupl_indexof;
 //
 template <typename X, typename...E>
-inline constexpr int tupl_indexof<X,TUPL_ID<E...>>
+inline constexpr int tupl_indexof<X,tupl<E...>>
               = type_pack_indexof<X,E...>;
 //
 // get<T>(t)
@@ -484,14 +480,14 @@ constexpr auto&& get(T&& t) noexcept
 //
 template <typename...T>
 constexpr auto tie(T&...t) noexcept
-  -> TUPL_ID<T&...> const
+  -> tupl<T&...> const
 {
     return { t... };
 }
 //
 template <typename...T>
 constexpr auto tie_fwd(T&&...t) noexcept
-  -> TUPL_ID<T&&...> const
+  -> tupl<T&&...> const
 {
     return { (T&&)t... };
 }
@@ -500,7 +496,7 @@ constexpr auto tie_fwd(T&&...t) noexcept
 //
 template <unsigned...I, tuplish T>
 constexpr auto getie(T&& t) noexcept
-  -> TUPL_ID<decltype(get<I>((T&&)t))...> const
+  -> tupl<decltype(get<I>((T&&)t))...> const
      requires ((I < tupl_size<T>) && ...)
     { return {get<I>((T&&)t)...}; }
 
@@ -510,13 +506,13 @@ concept self_constructible = std::constructible_from<T,T>;
 // dupl<I...>(tupl) -> tupl{get<I>(tupl)...};
 //
 template <unsigned...I, typename...E>
-constexpr auto dupl(TUPL_ID<E...>const& a)
-  -> TUPL_ID<type_pack_element<I,E...>...>
+constexpr auto dupl(tupl<E...>const& a)
+  -> tupl<type_pack_element<I,E...>...>
 {
   if constexpr ((self_constructible<type_pack_element<I,E...>> && ...))
     return {get<I>(a)...};
   else
-    return TUPL_ID<type_pack_element<I,E...>...>{} = {get<I>(a)...};
+    return tupl<type_pack_element<I,E...>...>{} = {get<I>(a)...};
 }
 //
 // tupl_cat(tupl_a,tupl_b) concantenate two tupls
@@ -563,7 +559,6 @@ constexpr auto tupl_cat(T&& t, U&& u)
 #include "namespace.hpp"
 
 #undef NAMESPACE_ID
-#undef TUPL_ID
 
 #undef TUPL_PASS
 
