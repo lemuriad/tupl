@@ -30,31 +30,27 @@
 #define TUPL_NUA [[no_unique_address]]
 #endif
 
-#include "IREPEAT.hpp"
+#include "IREPEAT.hpp" // Preprocessor library for indexed repetitions
 
 #include "namespace.hpp" // Optional namespace, defaults to lml
 //
 inline constexpr size_t tupl_max_arity = HEXLIT(TUPL_MAX_ARITY);
 //
-// tupl primary template declaration, tupl<E...>
+// tupl primary template declarations, tupl<E...>, lupl<E...> aggregates
+// tuple<T...> adds constructors for array members from array lvalues
 //
-template <typename...E> struct tupl;
+template <typename...E> struct tupl;  // aggregate, no_unique_address
+template <typename...E> struct lupl;  // aggregate
+template <typename...E> struct tuple; // non-aggregate
 //
-// CTAD deduce values including arrays (no decay, unlike std tuple)
+// CTAD deduces values including arrays (no decay, unlike std tuple)
 //
 template <typename...E> tupl(E const&...) -> tupl<E...>;
+template <typename...E> lupl(E const&...) -> lupl<E...>;
+template <typename...E> tuple(E const&...) -> tuple<E...>;
 //
-namespace impl {
-//
-// tupl_cons adds constructors for tupl array members from array lvalues
-//
-template <typename...E> struct tupl_cons; // : tupl<E...>
-//
-template <typename...E> tupl_cons(E const&...) -> tupl_cons<E...>;
-//
-} // impl
-//
-template <typename...E> tupl(impl::tupl_cons<E...>) -> tupl<E...>;
+template <typename...E> tupl(tuple<E...>) -> tupl<E...>; // slicing
+template <typename...E> lupl(tuple<E...>) -> lupl<E...>; // slicing
 //
 // tuplish concept, requires T is a complete type with a member alias
 //  'tupl_t' to which T is implicitly convertible (e.g. by inheritance).
@@ -255,29 +251,30 @@ struct rref
   T& r;
   constexpr rref(std::same_as<T> auto&& a) noexcept : r{a} {}
 };
+} // impl
 //
-// tupl_cons adds constructors for tupl array members from array lvalues
+// tuple adds constructors for tupl array members from array lvalues
 // the client constrains to use this only if array members are present
 //
 template <typename...E>
-struct tupl_cons : tupl<E...>
+struct tuple : tupl<E...>
 {
   using base = tupl<E...>;
 
-  explicit (!(default_list_initializable<E> && ...))
-  constexpr tupl_cons() = default;
+  explicit (!(impl::default_list_initializable<E> && ...))
+  constexpr tuple() = default;
 
   // Single array element constructor
   // Construct from ref-wrapped E to force braced copy list-init syntax,
   // as a single operator=(auto&&) forwarding arg works without braces
   //
-  constexpr tupl_cons(lref<E>...e)
+  constexpr tuple(impl::lref<E>...e)
     noexcept(noexcept((assign(std::declval<E&>(),e.r),...)))
     requires (sizeof...(E) == 1)
   {
     assign(this->x0, (e.r,...));
   }
-  constexpr tupl_cons(rref<E>...e)
+  constexpr tuple(impl::rref<E>...e)
     noexcept(noexcept((assign(std::declval<E&>(),(E&&)e.r),...)))
     requires (sizeof...(E) == 1)
   {
@@ -287,14 +284,13 @@ struct tupl_cons : tupl<E...>
   // Multi element constructor, dealing with array(s)
   //
   template <same_ish<E>...U>
-  constexpr tupl_cons(U&&...e)
+  constexpr tuple(U&&...e)
     noexcept(noexcept((assign(std::declval<E&>(),(U&&)e),...)))
     requires (sizeof...(U) > 1)
   {
     map(*(base*)this, [&](E&...l){ (assign(l,(U&&)e),...);} );
   }
 };
-} // impl
 //
 // tupl<T...> size N pack specializations
 
@@ -307,7 +303,7 @@ struct tupl_cons : tupl<E...>
 #define MAP_IMPL(...) (noexcept(f(__VA_ARGS__))){return f(__VA_ARGS__);}
 
 #define R_TUPL tupl_assign_fwd_t<tupl>
-#define C_TUPL impl::tupl_cons<TUPL_TYPE_IDS>
+#define C_TUPL tuple<TUPL_TYPE_IDS>
 
 #define TUPL_PASS 1
 #define VREPEAT_COUNT TUPL_MAX_ARITY
@@ -321,11 +317,28 @@ struct tupl_cons : tupl<E...>
 #elif (TUPL_PASS == 1)
 //
 template <XREPEAT(VREPEAT_INDEX,typename TUPL_TYPE_ID,COMMA)>
+struct lupl<TUPL_TYPE_IDS>
+{
+ using tupl_t = lupl;
+ XREPEAT(VREPEAT_INDEX,MEMBER_DECL,NOSEP) // MEMBER DECLS
+ //
+ friend auto operator<=>(lupl const&,lupl const&)
+#if NREPEAT != 0
+   requires types_all<lupl,is_member_default_3way>
+#endif
+   = default;
+ //
+ template <same_ish<lupl> T>
+ friend constexpr decltype(auto) map([[maybe_unused]]T&& t, auto f)
+ noexcept MAP_IMPL(XREPEAT(VREPEAT_INDEX,((T&&)t).TUPL_DATA_ID,COMMA))
+};
+
+template <XREPEAT(VREPEAT_INDEX,typename TUPL_TYPE_ID,COMMA)>
 struct tupl<TUPL_TYPE_IDS>
 {
  using tupl_t = tupl;
  XREPEAT(VREPEAT_INDEX,TUPL_NUA MEMBER_DECL,NOSEP) // NUA MEMBER DECLS
-//
+ //
  friend auto operator<=>(tupl const&,tupl const&)
 #if NREPEAT != 0
    requires types_all<tupl,is_member_default_3way>
