@@ -300,18 +300,11 @@ struct tupl_cons : tupl<E...>
 
 #define TUPL_TYPE_ID XD
 #define TUPL_DATA_ID xD
-#define TYPENAME_DECL(n) typename TUPL_TYPE_ID(n)
-#define TUPL_t_DATA_FWD(n) ((T&&)t).TUPL_DATA_ID(n)
 #define MEMBER_DECL(n) TUPL_TYPE_ID(n) TUPL_DATA_ID(n);
 
 #define TUPL_TYPE_IDS XREPEAT(VREPEAT_INDEX,TUPL_TYPE_ID,COMMA)
-#define TUPL_DATA_IDS XREPEAT(VREPEAT_INDEX,TUPL_DATA_ID,COMMA)
-#define TYPENAME_DECLS XREPEAT(VREPEAT_INDEX,TYPENAME_DECL,COMMA)
-#define TUPL_t_DATA_FWDS XREPEAT(VREPEAT_INDEX,TUPL_t_DATA_FWD,COMMA)
 
-#define MAP_V(...) template <same_ish<tupl> T> friend constexpr \
-decltype(auto) map([[maybe_unused]]T&& t, auto f) \
-noexcept(noexcept(f(__VA_ARGS__))) { return f(__VA_ARGS__); }
+#define MAP_IMPL(...) (noexcept(f(__VA_ARGS__))){return f(__VA_ARGS__);}
 
 #define R_TUPL tupl_assign_fwd_t<tupl>
 #define C_TUPL impl::tupl_cons<TUPL_TYPE_IDS>
@@ -327,7 +320,7 @@ noexcept(noexcept(f(__VA_ARGS__))) { return f(__VA_ARGS__); }
 
 #elif (TUPL_PASS == 1)
 //
-template <TYPENAME_DECLS>
+template <XREPEAT(VREPEAT_INDEX,typename TUPL_TYPE_ID,COMMA)>
 struct tupl<TUPL_TYPE_IDS>
 {
  using tupl_t = tupl;
@@ -360,7 +353,9 @@ struct tupl<TUPL_TYPE_IDS>
    requires (types_all<tupl, is_const_assignable>)
    {return assign_to{*this} = tupl<>{};}
 #endif
- MAP_V(TUPL_t_DATA_FWDS)
+ template <same_ish<tupl> T>
+ friend constexpr decltype(auto) map([[maybe_unused]]T&& t, auto f)
+ noexcept MAP_IMPL(XREPEAT(VREPEAT_INDEX,((T&&)t).TUPL_DATA_ID,COMMA))
 };
 
 #else // TUPL_PASS == 2
@@ -537,22 +532,17 @@ constexpr auto tupl_cat(T&& t, U&& u)
 #include "IREPEAT_UNDEF.hpp"
 
 #undef R_TUPL
-#undef MAP_V
-
-#undef TUPL__t_DATA_FWDS
-#undef TYPENAME_DECLS
-#undef TUPL_DATA_IDS
-#undef TUPL_TYPE_IDS
+#undef C_TUPL
+#undef MAP_IMPL
 
 #undef MEMBER_DECL
-#undef TUPL_t_DATA_FWD
-#undef TYPENAME_DECL
 #undef TUPL_DATA_ID
 #undef TUPL_TYPE_ID
 
+#undef TUPL_TYPE_IDS
+
 #undef TUPL_NUA
 
-#undef TUPL_MAX_ARITY_ID
 #undef TUPL_MAX_ARITY
 
 #include "namespace.hpp"
