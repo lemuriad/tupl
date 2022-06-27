@@ -56,8 +56,8 @@ same_ish<int> auto&& nn = mm;
 bool test_refs()
 {
     int i, ii;
-    const tupl<int&> ti{ i };
-    const tupl<int&> tii{ ii };
+    const refs<int&> ti{ i };
+    const refs<int&> tii{ ii };
     ti = { 1 };
     tii = ti;
     tie(ii) = tie(i);
@@ -66,8 +66,8 @@ bool test_refs()
 
     long j, jj;
     char c, cc;
-    tupl<int&, long&, char&> ijc{ i,j,c }; // tie
-    tupl<int&, long&, char&> ijc2{ ii,jj,cc }; // tie
+    refs<int&, long&, char&> ijc{ i,j,c }; // tie
+    refs<int&, long&, char&> ijc2{ ii,jj,cc }; // tie
     swap(ijc, ijc2);
     ijc = {1,2L,'d'};  // assign-through (std tuple & tie don't have this)
     auto& [x,y,z] = ijc;
@@ -77,7 +77,7 @@ bool test_refs()
     assert(x == 1 && y == 2 && z == 'd');
     assert(x == get<0>(ijc) && y == get<1>(ijc) && z == get<2>(ijc));
     assert(&x == &get<0>(ijc) && &y == &get<1>(ijc) && &z == &get<2>(ijc));
-    assert((ijc == tupl<int&, long&, char&>{x, y, z}));
+    assert((ijc == refs<int&, long&, char&>{x, y, z}));
 
     return true;
 };
@@ -85,7 +85,7 @@ bool test_refs()
 struct c16 { char data[16]; };
 struct BIG { char data[20]; };
 
-using tupl_scalar_refs = tupl<int&, long&, char&>;
+using tupl_scalar_refs = refs<int&, long&, char&>;
 
 static_assert( std::is_aggregate<tupl_scalar_refs>() );
 static_assert(std::is_trivially_copyable<tupl_scalar_refs>());

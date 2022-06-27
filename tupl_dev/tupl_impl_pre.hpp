@@ -36,32 +36,35 @@
 //
 inline constexpr size_t tupl_max_arity = HEXLIT(TUPL_MAX_ARITY);
 //
-// tupl primary template declarations, tupl<E...>, lupl<E...> aggregates
-// tuple<T...> adds constructors for array members from array lvalues
+// Primary template declarations - tupl & lupl are aggregates
+// tupl has [[no_unique_address]] attribute on all members
+// tuple & luple add constructors for array members from array lvalues
 //
-template <typename...E> struct tupl;  // aggregate, no_unique_address
+template <typename...E> struct tupl;  // aggregate [[no_unique_address]]
 template <typename...E> struct lupl;  // aggregate
-template <typename...E> struct tuple; // non-aggregate
+template <typename...E> struct tuple; // non-aggregate, derives tupl
+template <typename...E> struct luple; // non-aggregate, derives lupl
 //
 // CTAD deduces values including arrays (no decay, unlike std tuple)
 //
 template <typename...E> tupl(E const&...) -> tupl<E...>;
 template <typename...E> lupl(E const&...) -> lupl<E...>;
 template <typename...E> tuple(E const&...) -> tuple<E...>;
+template <typename...E> luple(E const&...) -> luple<E...>;
 //
 template <typename...E> tupl(tuple<E...>) -> tupl<E...>; // slicing
-template <typename...E> lupl(tuple<E...>) -> lupl<E...>; // slicing
+template <typename...E> lupl(luple<E...>) -> lupl<E...>; // slicing
+//
+template <const_assignable...E> struct refs; // aggregate of references
+template <typename...E> refs(E&&...) -> refs<E&&...>;
 //
 // tuplish concept, requires T is a complete type with a member alias
 //  'tupl_t' to which T is implicitly convertible (e.g. by inheritance).
 //  Note that tuplish matches tupl with cvref qualifiers
 //
-//template <typename T> concept tuplish = std::is_convertible_v<
-//     std::remove_cvref_t<T>, typename std::remove_cvref_t<T>::tupl_t>;
-template <typename T> // Alternative definition (is_convertible fail
-concept tuplish       // on clang & stdlibc++ declval in unevaluated)
- = requires (T v, typename std::remove_cvref_t<T>::tupl_t& u)
-   {decltype(u)(v);}; // reference initialization implicit conversions//
+template <typename T>
+concept tuplish = requires (T v)
+                  { (typename std::remove_cvref_t<T>::tupl_t&)v; };
 //
 // tupl_t<Tupl> alias of the member typedef tupl_t
 //
@@ -96,7 +99,7 @@ template <typename U> struct assign_fwd;
 template <typename U> using assign_fwd_t = typename assign_fwd<U>::type;
 //
 template <typename Tupl>
-using tupl_assign_fwd = type_map<assign_fwd_t,Tupl>;
+using tupl_assign_fwd = type_map<assign_fwd_t,tupl_t<Tupl>>;
 //
 template <typename Tupl>
 using tupl_assign_fwd_t = typename tupl_assign_fwd<Tupl>::type;
@@ -182,28 +185,29 @@ inline constexpr bool tupls_noexcept_assignable<L,R,
 template <tuplish Lr>
 struct assign_to<Lr>
 {
-  using L = std::remove_reference_t<Lr>;
+  using L = tupl_t<Lr>;
 
   using value_type = std::conditional_t<tupl_val<L>, L, const L>;
 
   value_type& l;
 
   template <tuplish R>
-    requires (tupls_assignable<L, R&&>)
-  constexpr value_type& operator=(R&& r) const noexcept(
-    noexcept(tupls_noexcept_assignable<L,R&&>))
+   // requires (tupls_assignable<L, R&&>)
+  constexpr value_type& operator=(R&& r) const noexcept//(
+//    noexcept(tupls_noexcept_assignable<L,R&&>))
   {
-    if constexpr (std::is_const_v<L>)
-      [&]<typename...U>(tupl<U...>const&){
+    using tuplt = tupl_t<R> const;
+    if constexpr (std::is_const_v<std::remove_reference_t<Lr>>)
+      [&]<template<typename...>class W, typename...U>(W<U...>const&){
         map(l, [&](auto&...t) {
-          map(r, [&](auto&...u) {
+          map(static_cast<tuplt&>(r), [&](auto&...u) {
             (assign(t,(U)u), ...);
           });
         });
-      }(r);
+      }(static_cast<tuplt&>(r));
     else
       map(l, [&r](auto&...t) {
-        map(r, [&t...](auto&&...u) {
+        map(static_cast<tuplt&>(r), [&t...](auto&&...u) {
           if constexpr (std::is_lvalue_reference_v<R>)
             (assign(t,u), ...);
           else
@@ -213,7 +217,7 @@ struct assign_to<Lr>
     return l;
   }
 
-  constexpr value_type& operator=(tupl<>const&) const noexcept
+  constexpr value_type& operator=(std::true_type const&) const noexcept
   {
     map(l, [](auto&...t) {(assign(t,{}),...);});
     return l;
@@ -227,15 +231,16 @@ constexpr void swap(L&& l, L&& r)
   noexcept(types_all<tupl_t<L>, std::is_nothrow_swappable>)
   requires(types_all<tupl_t<L>, std::is_swappable>)
 {
-  map(l, [&r](auto&...t) {
-    map(r, [&t...](decltype(t)...u)
+  using tuplt = apply_cvref_t<L,tupl_t<L>>;
+  map(static_cast<tuplt&>(l), [&r](auto&...t) {
+    map(static_cast<tuplt&>(r), [&t...](decltype(t)...u)
     {
       (std::ranges::swap((apply_ref_t<L&&,decltype(t)>)t,
                          (apply_ref_t<L&&,decltype(t)>)u), ...);
     });
   });
 }
-
+//
 namespace impl {
 //
 template <typename T>
@@ -251,45 +256,56 @@ struct rref
   T& r;
   constexpr rref(std::same_as<T> auto&& a) noexcept : r{a} {}
 };
-} // impl
 //
-// tuple adds constructors for tupl array members from array lvalues
-// the client constrains to use this only if array members are present
+// uple adds constructors for array members from array lvalues
 //
-template <typename...E>
-struct tuple : tupl<E...>
+template <typename base, typename...E>
+struct uple : base
 {
-  using base = tupl<E...>;
-
   explicit (!(impl::default_list_initializable<E> && ...))
-  constexpr tuple() = default;
+  constexpr uple() = default;
 
   // Single array element constructor
   // Construct from ref-wrapped E to force braced copy list-init syntax,
   // as a single operator=(auto&&) forwarding arg works without braces
   //
-  constexpr tuple(impl::lref<E>...e)
+  constexpr uple(impl::lref<E>...e)
     noexcept(noexcept((assign(std::declval<E&>(),e.r),...)))
     requires (sizeof...(E) == 1)
   {
-    assign(this->x0, (e.r,...));
+    assign(((base*)this)->x0, (e.r,...));
   }
-  constexpr tuple(impl::rref<E>...e)
+  constexpr uple(impl::rref<E>...e)
     noexcept(noexcept((assign(std::declval<E&>(),(E&&)e.r),...)))
     requires (sizeof...(E) == 1)
   {
-    assign(this->x0, ((E&&)e.r,...));
+    assign(((base*)this)->x0, ((E&&)e.r,...));
   }
 
   // Multi element constructor, dealing with array(s)
   //
   template <same_ish<E>...U>
-  constexpr tuple(U&&...e)
+  constexpr uple(U&&...e)
     noexcept(noexcept((assign(std::declval<E&>(),(U&&)e),...)))
     requires (sizeof...(U) > 1)
   {
     map(*(base*)this, [&](E&...l){ (assign(l,(U&&)e),...);} );
   }
+  //
+  //friend auto operator<=>(uple const&, uple const&) = default;
+};
+} // impl
+//
+template <typename...E>
+struct tuple : impl::uple<tupl<E...>,E...>
+{
+  using impl::uple<tupl<E...>,E...>::uple;
+};
+//
+template <typename...E>
+struct luple : impl::uple<lupl<E...>,E...>
+{
+  using impl::uple<lupl<E...>,E...>::uple;
 };
 //
 // tupl<T...> size N pack specializations
@@ -301,9 +317,6 @@ struct tuple : tupl<E...>
 #define TUPL_TYPE_IDS XREPEAT(VREPEAT_INDEX,TUPL_TYPE_ID,COMMA)
 
 #define MAP_IMPL(...) (noexcept(f(__VA_ARGS__))){return f(__VA_ARGS__);}
-
-#define R_TUPL tupl_assign_fwd_t<tupl>
-#define C_TUPL tuple<TUPL_TYPE_IDS>
 
 #define TUPL_PASS 1
 #define VREPEAT_COUNT TUPL_MAX_ARITY
@@ -328,6 +341,14 @@ struct lupl<TUPL_TYPE_IDS>
 #endif
    = default;
  //
+#if NREPEAT != 0
+ template<typename...>constexpr auto& operator=(luple<TUPL_TYPE_IDS> r)
+   noexcept(noexcept(*this = static_cast<lupl&&>(r)))
+   requires ( types_all<lupl, impl::is_value>
+         && ! types_all<lupl, impl::is_direct_initialized>)
+   {return *this = static_cast<lupl&&>(r);}
+#endif
+ //
  template <same_ish<lupl> T>
  friend constexpr decltype(auto) map([[maybe_unused]]T&& t, auto f)
  noexcept MAP_IMPL(XREPEAT(VREPEAT_INDEX,((T&&)t).TUPL_DATA_ID,COMMA))
@@ -344,34 +365,39 @@ struct tupl<TUPL_TYPE_IDS>
    requires types_all<tupl,is_member_default_3way>
 #endif
    = default;
+ //
 #if NREPEAT != 0
-//
- template<typename...>constexpr auto& operator=(C_TUPL r)
+ template<typename...>constexpr auto& operator=(tuple<TUPL_TYPE_IDS> r)
    noexcept(noexcept(*this = static_cast<tupl&&>(r)))
    requires ( types_all<tupl, impl::is_value>
          && ! types_all<tupl, impl::is_direct_initialized>)
    {return *this = static_cast<tupl&&>(r);}
-//
- template<typename...>constexpr auto& operator=(R_TUPL r) const
-   noexcept(noexcept(assign_to{*this} = r))
-   requires (types_all<tupl, is_const_assignable>)
-   {return assign_to{*this} = r;}
-//
- template<tuplish T> constexpr auto& operator=(T&& r) const
-   noexcept(noexcept(assign_to{*this} = r))
-     requires (tupls_assignable<tupl const, NAMESPACE_ID::tupl_t<T>>)
-   {return assign_to{*this} = r;}
-//
- template<typename...>constexpr auto& operator=(tupl<>) const
-   requires (types_all<tupl, is_const_assignable>)
-   {return assign_to{*this} = tupl<>{};}
 #endif
+ //
  template <same_ish<tupl> T>
  friend constexpr decltype(auto) map([[maybe_unused]]T&& t, auto f)
  noexcept MAP_IMPL(XREPEAT(VREPEAT_INDEX,((T&&)t).TUPL_DATA_ID,COMMA))
 };
 
 #else // TUPL_PASS == 2
+
+template <const_assignable...R> struct refs : lupl<R...>
+{
+ template <typename...>
+ constexpr auto& operator=(lupl<assign_fwd_t<R>...> r) const
+   noexcept(noexcept(assign_to{*(lupl<R...>*)this} = r))
+   {return assign_to{*this} = r;}
+ //
+ template <tuplish T>
+ constexpr auto& operator=(T&& r) const
+   noexcept(noexcept(assign_to{*(lupl<R...>*)this} = r))
+ //  requires (tupls_assignable<lupl<R...> const, NAMESPACE_ID::tupl_t<T>>)
+   {return assign_to{*this} = r;}
+ //
+ template<typename...>
+ constexpr auto& operator=(std::true_type) const
+   {return assign_to{*(lupl<R...>*)this} = std::true_type{};}
+};
 
 //
 // get<I>(t)
@@ -385,15 +411,16 @@ template <size_t I, tuplish T>
 #define MACRO(N) if constexpr(I==HEXLIT(N))return((R)t).TUPL_DATA_ID(N);
  XREPEAT(TUPL_MAX_ARITY,MACRO,ELSE)
 #undef MACRO
+#undef ELSE
  UNREACHABLE();
 }
 //
 // compare(l,r): 3-way comparison for tupls with <=> comparable elements
 //
-template <typename...L, typename...R>
+template <template <typename...> typename T, typename...L, typename...R>
   requires (three_way_comparable_with<L,R> && ...)
-constexpr auto compare(tupl<L...> const& l, tupl<R...> const& r)
-noexcept{
+constexpr auto compare(T<L...> const& l, T<R...> const& r) noexcept
+{
  constexpr auto s = sizeof...(L);
  constexpr compare_three_way cmp;
  if constexpr (s==0) return cmp(0,0);
@@ -406,33 +433,36 @@ l.TUPL_DATA_ID(N),r.TUPL_DATA_ID(N));c!=0||HEXLIT(INC(N))==s)return c;}
 //
 template <tuplish L>
 constexpr auto compare(L const& l, tupl_assign_fwd_t<L> r) noexcept
-  { return compare(l,r); }
+  { return compare(static_cast<tupl_t<L> const&>(l), r); }
 //
 // equals(l,r) == comparison for tupls with all == comparable elements
 //
-template <typename...L, typename...R>
+template <template <typename...> typename TL, typename...L,
+          template <typename...> typename TR, typename...R>
   requires (equality_comparable_with<L,R> && ...)
-constexpr bool equals(tupl<L...> const& l, tupl<R...> const& r)
-noexcept{
+constexpr bool equals(TL<L...> const& l, TR<R...> const& r) noexcept
+{
   return map(l, [&r](L const&...lh) {
     return map(r, [&lh...](R const&...rh)
     {
-      return ((lh == rh) && ...); // no short circuit, intended
+      return (equal_to{}(lh,rh) && ...); // no short circuit, intended
     });
   });
 }
 //
 template <tuplish L>
 constexpr bool equals(L const& l, tupl_assign_fwd_t<L> r) noexcept
-  { return equals(l,r); }
+  { return equals(static_cast<tupl_t<L>const&>(l), r); }
 //
 // operator<=> overload, when possible and not defaulted
 //
 template <tuplish T>
   requires (! types_all<tupl_t<T>, is_member_default_3way>
            && types_all<tupl_t<T>, is_three_way_comparable>)
-constexpr auto operator<=>(T const& l,T const& r) noexcept {
-  return compare(l,r);
+constexpr auto operator<=>(T const& l,T const& r) noexcept
+{
+  using tuplt = tupl_t<T> const&;
+  return compare(static_cast<tuplt>(l), static_cast<tuplt>(r));
 }
 //
 // operator== overloads, when possible and not defaulted
@@ -484,18 +514,18 @@ constexpr auto&& get(T&& t) noexcept
   return get<tupl_indexof<X, tupl_t<T>>>((T&&)t);
 }
 //
-// tie(a,b) -> tupl<decltype(a)&, decltype(b)&>{a,b}
+// tie(a,b) -> refs<decltype(a)&, decltype(b)&>{a,b}
 //
 template <typename...T>
 constexpr auto tie(T&...t) noexcept
-  -> tupl<T&...> const
+  -> refs<T&...> const
 {
     return { t... };
 }
 //
 template <typename...T>
 constexpr auto tie_fwd(T&&...t) noexcept
-  -> tupl<T&&...> const
+  -> refs<T&&...> const
 {
     return { (T&&)t... };
 }
@@ -504,7 +534,7 @@ constexpr auto tie_fwd(T&&...t) noexcept
 //
 template <unsigned...I, tuplish T>
 constexpr auto getie(T&& t) noexcept
-  -> tupl<decltype(get<I>((T&&)t))...> const
+  -> refs<decltype(get<I>((T&&)t))...> const
      requires ((I < tupl_size<T>) && ...)
     { return {get<I>((T&&)t)...}; }
 
@@ -544,8 +574,6 @@ constexpr auto tupl_cat(T&& t, U&& u)
 
 #include "IREPEAT_UNDEF.hpp"
 
-#undef R_TUPL
-#undef C_TUPL
 #undef MAP_IMPL
 
 #undef MEMBER_DECL
@@ -559,8 +587,6 @@ constexpr auto tupl_cat(T&& t, U&& u)
 #undef TUPL_MAX_ARITY
 
 #include "namespace.hpp"
-
-#undef NAMESPACE_ID
 
 #undef TUPL_PASS
 
