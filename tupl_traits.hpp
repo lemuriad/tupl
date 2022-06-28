@@ -151,7 +151,7 @@ using is_convertible
                        remove_all_extents<U>>;
 
 template <typename U, typename T = U>
-concept direct_initializes = requires (U u) {T{(U&&)u};};
+concept direct_initializes = requires (U u) {T{static_cast<U&&>(u)};};
 
 template <typename U>
 using is_direct_initialized = std::bool_constant<direct_initializes<U>>;
