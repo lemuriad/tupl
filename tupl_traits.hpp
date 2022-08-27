@@ -23,8 +23,8 @@ concept same_ish = std::same_as<U, std::remove_cvref_t<T>>;
 //
 template <typename T> extern const size_t type_list_size;
 //
-template <template <typename...> class Tupl, typename...E>
-inline constexpr auto type_list_size<Tupl<E...>> = sizeof...(E);
+template <template <typename...> class L, typename...E>
+inline constexpr auto type_list_size<L<E...>> = sizeof...(E);
 
 //
 // types_all<LT,P> meta function -> (P<T>() && ...) for LT = L<T...>
@@ -62,12 +62,16 @@ inline constexpr int type_pack_indexof = []
   return index;
 }();
 
+// type_pack_element; Clang has a builtin, use it if available
+//
 #ifdef __has_builtin
 #if __has_builtin(__type_pack_element)
 #define TYPEPACKEL(I,...) __type_pack_element<I,__VA_ARGS__>
 #endif
 #endif
-
+//
+// else implement type_pack_element
+//
 #ifndef TYPEPACKEL
 
 namespace impl {
@@ -104,7 +108,7 @@ consteval auto type_pack_element()
 }
 } // impl
 #define TYPEPACKEL(I,...) typename decltype(impl::type_pack_element<I, \
-std::type_identity,E...>())::type
+std::type_identity,__VA_ARGS__>())::type
 
 #endif
 
