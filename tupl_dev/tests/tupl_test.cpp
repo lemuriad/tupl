@@ -161,8 +161,6 @@ void big() {
 //    assert( )
 }
 
-#include "tuple.hpp"
-
 tupl tup = {"c++",true}; // deduces tupl<char[4],bool>
 
 using Tup = decltype(tup);
@@ -246,12 +244,15 @@ int main()
 
   auto cppxx = assign(tupl<char[4],int>{}) = {cpp,std};
   auto cppyy = lml::tupl_init(cpp,std);
+  assert( cppxx == cppyy );
+
   vals<char[4],int> cppval; // uninitialized
   cppval = {cpp, std};      // two-phase init
   cppval = lml::tie_fwd(cpp,'\x14');
 
   // two-phase init one-liner
   auto cppass = vals<char[4],int>{} = {cpp,std};
+  assert( cppass == cppxx );
 
 //  assign(cstd) = {{},20};
 //  assign(cstd) = {cmm,20};

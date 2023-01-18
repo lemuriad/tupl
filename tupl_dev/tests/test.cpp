@@ -786,8 +786,6 @@ void tupl_cats()
     char(&)[4],char(&)[4],  char(&&)[4],  char const(&)[4], char(&)[4]> );
 };
 
-#include "tuple.hpp"
-
 int main()
 {
   char a[4]; int v;
