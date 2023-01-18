@@ -1,25 +1,16 @@
-#ifndef NAMESPACE_ID     // NAMESPACE_ID = your name for the namespace
-#define NAMESPACE_ID lml // Configure with a -DNAMESPACE_ID=ns define
-#endif                   // (an empty def inhibits namespace generation)
-
-#define VA_ARG1(A0,A1,...) A1
-#define VA_EMPTY(...) VA_ARG1(__VA_OPT__(,)0,1,) // (Detects __VA_OPT__)
-
-#if (VA_EMPTY(?))     // VA_EMPTY(?) true if __VA_OPT__ is not supported
-static_assert( false, // Informative warn if __VA_OPT__ is not supported
-  "Preprocessing requires __VA_OPT__ support. "
-  "MSVC may need /Zc:preprocessor switch");
+#ifndef NAMESPACE_ID /* Configure your possibly-nested namespace-id */
+# define NAMESPACE_ID lml
 #endif
-
-#if ! VA_EMPTY(NAMESPACE_ID)
-#  ifndef NAMESPACE_IS_OPEN
-#  define NAMESPACE_IS_OPEN
-namespace NAMESPACE_ID {  // OPEN  namespace NAMESPACE_ID
-#  else
-}                         // CLOSE namespace NAMESPACE_ID
-#  undef NAMESPACE_IS_OPEN
+#ifdef NAMESPACE_ID
+# ifndef NAMESPACE_ID_IS_EMPTY
+#  define NAMESPACE_ID_IS_EMPTY_(ID,ONE)ID##ONE
+#  define NAMESPACE_ID_IS_EMPTY(NS_ID)NAMESPACE_ID_IS_EMPTY_(NS_ID,0x01)
+#  if ! NAMESPACE_ID_IS_EMPTY(NAMESPACE_ID)
+namespace NAMESPACE_ID {
 #  endif
+# elif ! NAMESPACE_ID_IS_EMPTY(NAMESPACE_ID)
+}
+# undef NAMESPACE_ID_IS_EMPTY
+# undef NAMESPACE_ID_IS_EMPTY_
+# endif
 #endif
-
-#undef VA_EMPTY
-#undef VA_ARG1

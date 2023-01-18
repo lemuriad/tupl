@@ -1,0 +1,9 @@
+[wrap-git]
+directory = snitch
+url = https://github.com/cschreib/snitch.git
+revision = main
+depth = 1
+
+[provide]
+snitch = snitch_dep
+snitch-with-main = snitch_with_main_dep

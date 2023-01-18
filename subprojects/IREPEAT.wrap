@@ -1,4 +1,8 @@
 [wrap-git]
 directory = IREPEAT
 url = https://github.com/willwray/IREPEAT
-revision = v0.4
+revision = master
+depth = 1
+
+[provide]
+IREPEAT = IREPEAT_dep

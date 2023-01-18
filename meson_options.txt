@@ -1,0 +1,11 @@
+option('tests', type : 'feature', value : 'auto',
+  description : 'Tests (auto-disabled if a subproject)')
+
+option('tupl_dev', type : 'feature', value : 'auto',
+  description : 'Download IREPEAT dependency for codegen')
+
+option('namespace_id', type : 'string', value : 'lml',
+  description : 'The namespace id for this library')
+
+option('tupl_max_arity', type : 'integer', min : 0, value : 0x10,
+  description : 'The maximum tupl number of elements')
