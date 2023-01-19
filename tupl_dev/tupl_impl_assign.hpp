@@ -67,6 +67,20 @@ struct assign_to<Lr>
     return l;
   }
 
+  constexpr value_type& operator=(L const& r) const
+    noexcept(std::is_nothrow_copy_assignable_v<L>)
+    requires std::is_copy_assignable_v<L>
+  {
+    return l = r;
+  }
+
+  constexpr value_type& operator=(L&& r) const
+    noexcept(std::is_nothrow_move_assignable_v<L>)
+    requires std::is_move_assignable_v<L>
+  {
+    return l = (L&&)r;
+  }
+
   // assign from other tuplish
   template <tuplish R>
   constexpr value_type& operator=(R&& r) const
