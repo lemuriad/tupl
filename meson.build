@@ -15,8 +15,7 @@ namespace_id = get_option('namespace_id')
 c_array_support_dep = subproject(
      'c_array_support').get_variable('c_array_support_dep')
 
-IREPEAT_dep = subproject(
-             'IREPEAT', required : tupl_dev).get_variable('IREPEAT_dep')
+IREPEAT_dep = dependency('IREPEAT', required : tupl_dev)
 
 tupl_dep = declare_dependency(
   dependencies: [c_array_support_dep, IREPEAT_dep],
