@@ -75,7 +75,8 @@ constexpr auto tupl_init(constructs<T> auto&&...v)
 template <template<typename...>class X = tupl, typename...T>
 constexpr auto tupl_init(auto&&...v) noexcept(
      noexcept(tupl_init<X,ctad_t<X,decltype(v)>...>((decltype(v))v...)))
-  -> X<ctad_t<X,decltype(v)>...> requires (sizeof...(T) == 0 &&
+  -> X<ctad_t<X,decltype(v)>...>
+    requires (sizeof...(T) == 0 && sizeof...(v) != 0 &&
     requires{tupl_init<X,ctad_t<X,decltype(v)>...>((decltype(v))v...);})
 {
   return tupl_init<X,ctad_t<X,decltype(v)>...>((decltype(v))v...);
