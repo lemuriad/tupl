@@ -714,13 +714,13 @@ struct assign_to<Lr>
       });
     return l;
   }
-  constexpr value_type& operator=(tupl<L const&> r) const
+  constexpr value_type& operator=(L const& r) const
     noexcept(std::is_nothrow_copy_assignable_v<L>)
     requires (tupl_val<L> && std::is_copy_assignable_v<L>)
   {
     return l = r;
   }
-  constexpr value_type& operator=(tupl<L&&> r) const
+  constexpr value_type& operator=(L&& r) const
     noexcept(std::is_nothrow_move_assignable_v<L>)
     requires (tupl_val<L> && std::is_move_assignable_v<L>)
   {
