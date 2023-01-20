@@ -21,7 +21,7 @@ using int_seq_t = seq_map_t<[](int i){return B+S*i;},N>;
 //
 template <int...siz> struct kron_t
 {
-  tupl<int,int> ij[(siz + ...)];
+  struct {int i,j;} ij[(siz + ...)];
 
   consteval kron_t() noexcept {
     const int sizes[]{siz...};

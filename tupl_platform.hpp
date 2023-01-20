@@ -57,9 +57,9 @@ namespace int_seq_map{template<auto f,int...I>__VA_ARGS__;}
 #elif defined(_MSC_VER)
 
 #define INT_SEQ_MAP(...)template<auto f>struct int_seq_map{\
-template<class,int...I>struct type{__VA_ARGS__;};};
+template<class,int...I>struct ty{__VA_ARGS__;};};
 #define SEQ_MAP()\
-typename __make_integer_seq<int_seq_map<f>::template type,int,N>::type;
+typename __make_integer_seq<int_seq_map<f>::template ty,int,N>::type;
 
 #endif
 
