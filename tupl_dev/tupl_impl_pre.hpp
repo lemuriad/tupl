@@ -37,7 +37,7 @@
 #endif
 
 //
-inline constexpr std::size_t tupl_max_arity = HEXLIT(TUPL_MAX_ARITY);
+inline constexpr size_t tupl_max_arity = HEXLIT(TUPL_MAX_ARITY);
 /*
    tupl<E...> primary template declaration; an aggregate struct
    with [[no_unique_address]] attribute on all element member decls E...
@@ -146,7 +146,7 @@ struct TUPL_ID<XREPEAT(VREPEAT_INDEX,TUPL_TYPE_ID,COMMA)>
 /*
   get<I>(t)
 */
-template <std::size_t I, tuplish T>
+template <size_t I, tuplish T>
 constexpr auto get(T&& t) noexcept
 -> apply_cvref_t<T&&,type_list_element_t<I,tupl_t<T>>>
   requires (I < tupl_size<T>)
@@ -179,10 +179,10 @@ constexpr auto&& get(tuplish auto&& t) noexcept
 /*
   tupl_mptr<I,T> member pointer getter
 */
-template <std::size_t I, typename T> // defined for tupl or lupl derived
+template <size_t I, typename T> // defined for tupl or lupl derived
 auto tupl_mptr = NOT_DEFINED(tupl_mptr<I,T>);
 
-template <std::size_t I, typename T>
+template <size_t I, typename T>
   requires tupl_or_lupl<tupl_t<T>>
 constexpr type_list_element_t<I,tupl_t<T>> T::* tupl_mptr<I,T>
  = [] {
@@ -198,11 +198,11 @@ constexpr type_list_element_t<I,tupl_t<T>> T::* tupl_mptr<I,T>
 /*
   tupl_mptrs<T> return a tupl of member pointers
 */
-template <typename T, std::size_t...I>
+template <typename T, size_t...I>
   requires tupl_or_lupl<tupl_t<T>>
 constexpr auto tupl_mptrs = tupl_mptrs<T,I...,sizeof...(I)>;
 //
-template <typename T, std::size_t...I>
+template <typename T, size_t...I>
   requires (tupl_or_lupl<tupl_t<T>> && tupl_size<T> == sizeof...(I))
 constexpr auto tupl_mptrs<T,I...> = tupl{tupl_mptr<I,T>...};
 

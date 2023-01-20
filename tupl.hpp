@@ -26,6 +26,8 @@
 #include "tupl_platform.hpp" // #define platform macros UNREACHABLE, NUA
 
 #include "namespace.hpp"
+using size_t = decltype(sizeof"");
+
 // The header "tupl_impl.hpp" as provided is limited to 'arity' 16.
 // If tupl_dev/tupl_impl.hpp exists then is included instead.
 //

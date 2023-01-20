@@ -47,7 +47,7 @@ template <typename...> struct type_list {};
 
 // type_list_size<T> the number of elements E in type list T = L<E...>
 //
-template <typename T> extern const std::size_t type_list_size;
+template <typename T> extern const size_t type_list_size;
 //
 template <template <typename...> class L, typename...E>
 inline constexpr auto type_list_size<L<E...>> = sizeof...(E);
@@ -210,7 +210,7 @@ template <
   typename X8=void,typename X9=void,typename Xa=void,typename Xb=void,
   typename Xc=void,typename Xd=void,typename Xe=void,typename Xf=void,
   typename...T>
-constexpr decltype(auto) type_pack_element_t = []<std::size_t I>()
+constexpr decltype(auto) type_pack_element_t = []<size_t I>()
 {
   switch (I)
   {
@@ -242,23 +242,23 @@ constexpr decltype(auto) type_pack_element_t = []<std::size_t I>()
 
 // type_pack_element_t<I,T...> alias of element I in type pack T...
 //
-template <std::size_t I, typename...E> requires (I < sizeof...(E))
+template <size_t I, typename...E> requires (I < sizeof...(E))
 using type_pack_element_t = TYPEPACKEL; // TYPEPACKEL 'bakes in' I,E...
 
 #undef TYPEPACKEL
 
 // type_list_element<I,TL> type_identity of element I in type list TL
 //
-template <std::size_t I, typename TL>
+template <size_t I, typename TL>
 extern std::type_identity<void> type_list_element;
 //
-template <std::size_t I, template <typename...> class L, typename...E>
+template <size_t I, template <typename...> class L, typename...E>
 std::type_identity<type_pack_element_t<I,E...>>
                    type_list_element<I,L<E...>>{};
 
 // type_list_element_t<I,TL> type of element I in type list TL = L<E...>
 //
-template <std::size_t I, typename TL>
+template <size_t I, typename TL>
 using type_list_element_t = typename decltype(
                             type_list_element<I,TL>)::type;
 
