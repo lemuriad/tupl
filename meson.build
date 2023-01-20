@@ -19,7 +19,7 @@ IREPEAT_dep = dependency('IREPEAT', required : tupl_dev)
 
 tupl_dep = declare_dependency(
   dependencies: [c_array_support_dep, IREPEAT_dep],
-  include_directories : include_directories('.'),
+  include_directories : include_directories('.','tupl_dev'),
 )
 
 if tests
