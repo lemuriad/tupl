@@ -11,14 +11,14 @@ using ctad_t = copy_cvref_t<type_list_element_t<0,
 namespace impl { // helpers to compute concatenated tupl types
 
 template <tuplish...TL, auto...IJ>
-constexpr auto cat_t(seq_T<tupl<int,int>, IJ...>)
-  -> tupl<type_list_element_t<IJ.x1,
-          type_list_element_t<IJ.x0, tupl<TL...>>>...>;
+constexpr auto cat_t(seq_T<IJ_t, IJ...>)
+  -> tupl<type_list_element_t<IJ.j,
+          type_list_element_t<IJ.i, tupl<TL...>>>...>;
 
 template <template<typename...>class X, tuplish...TL, auto...IJ>
-constexpr auto cat_ctad_t(seq_T<tupl<int,int>, IJ...>)
-  -> X<ctad_t<X,type_list_element_t<IJ.x1,
-                type_list_element_t<IJ.x0, tupl<TL...>>>>...>;
+constexpr auto cat_ctad_t(seq_T<IJ_t, IJ...>)
+  -> X<ctad_t<X,type_list_element_t<IJ.j,
+                type_list_element_t<IJ.i, tupl<TL...>>>>...>;
 
 } // impl
 
@@ -59,12 +59,12 @@ constexpr auto tupl_init(constructs<T> auto&&...v)
 
   else // expand array elements in brace-elided aggregate initializers
 
-    return [&]<auto...IJ>(seq_T<tupl<int,int>, IJ...>)
+    return [&]<auto...IJ>(seq_T<IJ_t, IJ...>)
             noexcept((is_nothrow_constructible_v<T,decltype(v)> && ...))
           -> X<T...>
     {
       NO_WARN_MISSING_BRACES(
-      return {flat_index(get<IJ.x0>(fwds{(decltype(v))v...}),IJ.x1)...};
+      return {flat_index(get<IJ.i>(fwds{(decltype(v))v...}),IJ.j)...};
       )
     }(kron_seq_t<flat_size<std::remove_cvref_t<T>>...>{});
 }
@@ -90,13 +90,13 @@ constexpr auto cat(TL&&...tl) noexcept(
  -> cat_t<tupl_t<TL>...>
  requires(std::is_constructible_v<std::remove_cvref_t<TL>,TL&&> && ...)
 {
-  return [&]<auto...IJ>(seq_T<tupl<int,int>,IJ...>) noexcept(
+  return [&]<auto...IJ>(seq_T<IJ_t,IJ...>) noexcept(
  (std::is_nothrow_constructible_v<std::remove_cvref_t<TL>,TL&&> && ...))
  -> cat_t<tupl_t<TL>...>
   {
-    return tupl_init<tupl,type_list_element_t<IJ.x1,
-                          type_list_element_t<IJ.x0, tupl<TL...>>>...>
-                         (get<IJ.x1>(get<IJ.x0>(fwds{(TL&&)tl...}))...);
+    return tupl_init<tupl,type_list_element_t<IJ.j,
+                          type_list_element_t<IJ.i, tupl<TL...>>>...>
+                         (get<IJ.j>(get<IJ.i>(fwds{(TL&&)tl...}))...);
   }
   (kron_seq_t<tupl_size<TL>...>{});
 }
@@ -111,12 +111,12 @@ constexpr auto cat(TL&&...tl) noexcept(
  requires (std::is_constructible_v<cat_ctad_t<X,TL&&>,
                 apply_cvref_t<TL&&,cat_ctad_t<X,TL&&>>> && ...)
 {
-  return [&]<auto...IJ>(seq_T<tupl<int,int>,IJ...>) noexcept(
+  return [&]<auto...IJ>(seq_T<IJ_t,IJ...>) noexcept(
      (std::is_nothrow_constructible_v<cat_ctad_t<X,TL&&>,
                    apply_cvref_t<TL&&,cat_ctad_t<X,TL&&>>> && ...))
     -> cat_ctad_t<X,TL&&...>
   {
-    return tupl_init<X>(get<IJ.x1>(get<IJ.x0>(fwds{(TL&&)tl...}))...);
+    return tupl_init<X>(get<IJ.j>(get<IJ.i>(fwds{(TL&&)tl...}))...);
   }
   (kron_seq_t<tupl_size<TL>...>{});
 }
