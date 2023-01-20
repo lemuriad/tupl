@@ -12,6 +12,8 @@
 
 #include "namespace.hpp"
 
+using size_t = decltype(sizeof"");
+
 // tupl_t<Tupl> alias of the member typedef tupl_t
 //
 template <typename Tupl>
