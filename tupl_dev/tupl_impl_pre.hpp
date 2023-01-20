@@ -88,7 +88,7 @@ template <typename...E> cvals(E const&...) -> cvals<tupl_view_t<E>...>;
 // tupl<T...> specializations VREPEATed for each arity
 #define TUPL_ID tupl
 #define VREPEAT_COUNT TUPL_MAX_ARITY
-#define VREPEAT_MACRO tupl_dev/tupl_impl_pre.hpp
+#define VREPEAT_MACRO tupl_impl_pre.hpp
 #include "VREPEAT.hpp"
 #undef TUPL_ID
 #undef NUA
@@ -98,7 +98,7 @@ template <typename...E> cvals(E const&...) -> cvals<tupl_view_t<E>...>;
 #define NUA
 #define TUPL_ID lupl
 #define VREPEAT_COUNT TUPL_MAX_ARITY
-#define VREPEAT_MACRO tupl_dev/tupl_impl_pre.hpp
+#define VREPEAT_MACRO tupl_impl_pre.hpp
 #include "VREPEAT.hpp"
 #undef TUPL_ID
 #undef NUA
