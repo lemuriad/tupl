@@ -106,7 +106,7 @@ template <typename...E> cvals(E const&...) -> cvals<tupl_view_t<E>...>;
 
 #undef TUPL_PASS
 #define TUPL_PASS 2
-#include __FILE__
+#include "tupl_impl.pp"
 
 #elif (TUPL_PASS == 1) // Repeat this section for each arity
 
