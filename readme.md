@@ -546,12 +546,11 @@ The `#include` dependencies are best seen in a diagram.
 
 The [`IREPEAT`](https://github.com/willwray/IREPEAT)
 preprocessor library is used to generate `"tupl_impl.hpp"`.  
-It preprocesses `tupl_dev/` file `"tupl_impl_pre.hpp"` and component  
-`tupl_impl_*.hpp` includes:
+It preprocesses `tupl_dev/` file `"tupl_impl.pp"` and component includes:
 
 ```mermaid
   flowchart LR
-    tupl_impl[tupl_impl_pre.hpp<br>tupl_impl_noedit_warn.hpp<br>tupl_impl_assign.hpp<br>tupl_impl_compare.hpp<br>tupl_impl_cat.hpp<br>-- tupl_impl_int_seq.hpp] -->|preprocess<br>IREPEAT| tupl_impl.hpp
+    tupl_impl[tupl_impl.pp<br>tupl_impl_noedit_warn.hpp<br>tupl_impl_assign.hpp<br>tupl_impl_compare.hpp<br>tupl_impl_cat.hpp<br>-- tupl_impl_int_seq.hpp] -->|preprocess<br>IREPEAT| tupl_impl.hpp
     style tupl_impl text-align:left
 
 ```
@@ -599,7 +598,7 @@ options to generate `tupl_impl.hpp` in the current directory:
 ```bash
 g++ -I. -Isubprojects/IREPEAT -Itupl_dev
     -MMD -nostdinc -C -E -P
-    -o tupl_impl.hpp tupl_dev/tupl_impl_pre.hpp
+    -o tupl_impl.hpp tupl_dev/tupl_impl.pp
 ```
 
 ### Configuration options
