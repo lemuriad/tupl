@@ -21,9 +21,10 @@
   member comparison and assignment, alongside other regular types.
   Preprocessing of repetitive codegen relies on IREPEAT project.
 */
+#include "tupl_platform.hpp" // #define platform macros UNREACHABLE, NUA
+
 #include "tupl_traits.hpp"   // #includes "array_assign.hpp", required
 #include "array_compare.hpp" // C array comparison support is required
-#include "tupl_platform.hpp" // #define platform macros UNREACHABLE, NUA
 
 #include "namespace.hpp"
 
@@ -33,16 +34,13 @@
 #ifdef TUPL_IMPL_PREPROCESS // Force preprocessing pass
 #include "tupl_dev/tupl_impl.pp"
 #elif defined __has_include
-# if __has_include("tupl_dev/tupl_impl.hpp")
-#include "tupl_dev/tupl_impl.hpp"
-# elif __has_include("tupl_impl.hpp")
+# if __has_include("tupl_impl.hpp")
 #include "tupl_impl.hpp"
-# else
-static_assert(false,"tupl_impl.hpp not found");
 # endif
-#else
-static_assert(false,"__has_include is a required feature");
-#endif
+# else
+#include "tupl_dev/tupl_impl.hpp"
+# endif
+
 #include "namespace.hpp"
 /*
   DO NOT EDIT the file 'tupl_impl.hpp'.
