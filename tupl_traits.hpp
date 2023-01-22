@@ -192,17 +192,9 @@ template <typename X, template <typename...> class L, typename...E>
 inline constexpr int type_list_indexof<X,L<E...>>
                    = type_pack_indexof<X,E...>;
 
-// type_pack_element_t; Clang has a builtin, use it if available
+#ifndef TYPEPACKEL // defined as __type_pack_element<I,E..> if builtin
 //
-#ifdef __has_builtin
-#if __has_builtin(__type_pack_element)
-#define TYPEPACKEL __type_pack_element<I,E...> // I,E... are 'baked in'
-#endif
-#endif
-//
-// else implement type_pack_element_t
-//
-#ifndef TYPEPACKEL
+// Implement type_pack_element_t
 //
 namespace impl {
 //

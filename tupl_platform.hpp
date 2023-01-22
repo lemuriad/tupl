@@ -63,6 +63,14 @@ typename __make_integer_seq<int_seq_map<f>::template ty,int,N>::type;
 
 #endif
 
+// type_pack_element_t; Clang has a builtin, use it if available
+//
+#ifdef __has_builtin
+#if __has_builtin(__type_pack_element)
+#define TYPEPACKEL __type_pack_element<I,E...> // I,E... are 'baked in'
+#endif
+#endif
+
 // Supress noisy missing-braces warnings on Clang
 //
 #ifndef NO_WARN_MISSING_BRACES
