@@ -735,6 +735,17 @@ void tupl_cats()
   //constexpr tupl cc12 = tupl_init<tupl,int[2]>({1,2});
   //static_assert( ci12 == cc12 );
 
+  constexpr auto ce = cat(tupl{});
+  constexpr auto c0 = cat<tupl>();
+  constexpr auto ci = cat(ci12);
+  constexpr auto ci0 = cat(ci12,c0);
+  constexpr auto cici = cat(ci12,ce,ci12);
+
+  static_assert(tupl_size<decltype(ce)> == 0);
+  static_assert(tupl_size<decltype(ci)> == 1);
+  static_assert(tupl_size<decltype(ci0)> == 1);
+  static_assert(tupl_size<decltype(cici)> == 2);
+
   // copy initialize tupl from array lvalue, using cat
   constexpr auto t12 = cat<tupl>(ties{i12});
 

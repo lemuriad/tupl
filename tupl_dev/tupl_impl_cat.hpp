@@ -92,8 +92,8 @@ constexpr auto cat(TL&&...tl) noexcept(
  (std::is_nothrow_constructible_v<std::remove_cvref_t<TL>,TL&&> && ...))
  -> cat_t<tupl_t<TL>...>
   {
-    return tupl_init<tupl,type_list_element_t<IJ.j,
-                          type_list_element_t<IJ.i, tupl<TL...>>>...>
+    return tupl_init<tupl,type_list_element_t<IJ.j, std::remove_cvref_t<
+                          type_list_element_t<IJ.i, tupl<TL...>>>>...>
                          (get<IJ.j>(get<IJ.i>(fwds{(TL&&)tl...}))...);
   }
   (kron_seq_t<tupl_size<TL>...>{});

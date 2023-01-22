@@ -32,12 +32,16 @@ template <int...siz> struct kron_t
       i = k; j = c++;
     }
   }
-  constexpr auto operator()(int s) const noexcept
+  consteval auto operator()(int s) const noexcept
   {
     return ij[s];
   }
 };
+template <int...siz> requires ((siz+...+0)==0) struct kron_t<siz...>
+{
+  consteval IJ_t operator()(int) const noexcept {return{};}
+};
 // kron_seq_t<s...> Kronecker index sequence of (s+...) tupl<int,int>{i,j}
 //
 template <int...siz>
-using kron_seq_t = seq_map_t<kron_t<siz...>{},(siz+...)>;
+using kron_seq_t = seq_map_t<kron_t<siz...>{},(siz+...+0)>;
