@@ -35,8 +35,6 @@ template <template<typename...>class X, tuplish...TL>
 using cat_ctad_t = decltype(impl::cat_ctad_t<X,tupl_fwd_t<TL>...>
                                   (kron_seq_t<tupl_size<TL>...>{}));
 
-template <typename V, typename T>
-concept constructs = is_constructible_v<T,V>;
 /*
   tupl_init; tupl aggregate initialization function overloads
 
@@ -49,7 +47,7 @@ concept constructs = is_constructible_v<T,V>;
   and brace elision (missing-braces warnings on Clang are suppressed).
 */
 template <template<typename...>class X = tupl, typename...T>
-constexpr auto tupl_init(constructs<T> auto&&...v)
+constexpr auto tupl_init(auto&&...v)
             noexcept((is_nothrow_constructible_v<T,decltype(v)> && ...))
   -> X<T...>
             requires (sizeof...(T) == sizeof...(v))
