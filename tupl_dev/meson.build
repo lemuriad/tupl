@@ -23,7 +23,20 @@ endif
 tupl_impl = cpp.preprocess('tupl_impl.pp',
             output : '../tupl_impl.hpp',
             compile_args : prepro_args + ['-DTUPL_MAX_ARITY='+ARITY],
-            include_directories : include_directories('.','..'),
+            include_directories : include_directories('.'),
            )
 
-tupl_impl_dep = declare_dependency(sources : tupl_impl)
+tupl_impl_dep = declare_dependency(sources : tupl_impl,
+             include_directories : include_directories('.'))
+
+if tupl_dev.enabled()
+
+tupl_amalgam = custom_target(
+  input: tupl_impl,
+  output: 'tupl_amalgam.hpp',
+  build_by_default: true,
+  command: ['./amalgamate.sh', '@INPUT@'],
+  depfile: 'tupl_amalgam.d',
+)
+
+endif
