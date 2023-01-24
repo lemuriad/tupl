@@ -9,3 +9,6 @@ option('namespace_id', type : 'string', value : 'lml',
 
 option('tupl_max_arity', type : 'integer', min : 0, value : 0x10,
   description : 'The maximum tupl number of elements')
+
+option('no_lupl', type : 'boolean', value : false,
+  description : 'Do not generate lupl type or specializations')

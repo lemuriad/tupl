@@ -12,6 +12,7 @@ is_subproj = meson.is_subproject()
 tests    = get_option('tests').disable_auto_if(is_subproj).allowed()
 tupl_dev = get_option('tupl_dev')
 arity = get_option('tupl_max_arity')
+no_lupl = get_option('no_lupl')
 namespace_id = get_option('namespace_id')
 
 c_array_support_dep = subproject(

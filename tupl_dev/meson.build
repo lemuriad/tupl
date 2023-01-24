@@ -18,6 +18,10 @@ else
   prepro_args = ['-I../subprojects/IREPEAT','-MMD','-nostdinc','-C','-Wno-pedantic']
 endif
 
+if no_lupl
+prepro_args += ['-DNO_LUPL']
+endif
+
 # The preprocessing codegen step, ideally it would accept IREPEAT_dep;
 # the -I include path is currently added in compile_args, 'unsandboxed'
 tupl_impl = cpp.preprocess('tupl_impl.pp',
