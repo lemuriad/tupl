@@ -180,7 +180,7 @@ auto tupl_mptr = NOT_DEFINED(tupl_mptr<I,T>);
 
 template <size_t I, typename T>
   requires tupl_or_lupl<tupl_t<T>>
-constexpr type_list_element_t<I,tupl_t<T>> T::* tupl_mptr<I,T>
+constexpr auto tupl_mptr<I,T>
  = [] {
   static_assert(I < tupl_size<T>, "tupl_mptr index out of bounds");
 # define ELSE() else
