@@ -1,4 +1,4 @@
-//  Copyright (c) 2022 Lemurian Labs https://lemurianlabs.com/
+//  Copyright (c) 2023 Lemurian Labs https://lemurianlabs.com/
 //
 //  Distributed under the Boost Software License, Version 1.0.
 //        http://www.boost.org/LICENSE_1_0.txt
@@ -15,14 +15,16 @@
 
   Depends on <concepts> for assignable_from, ranges::swap CPO, etc.
   Depends on <compare> for three-way operator <=> comparisons, etc.
-  (MSVC implementation also depends on <cstdint> for uintptr_t.)
+  Depends on <cstdint> for uintptr_t etc.
 
   Depends on lml c_array_support project for generic support of array
-  member comparison and assignment, alongside other regular types.
-  Preprocessing of repetitive codegen relies on IREPEAT project.
-*/
-#include "tupl_platform.hpp" // #define platform macros UNREACHABLE, NUA
+             assignment and comparison, alongside other regular types.
 
+  Depends on IREPEAT preprocessor library of for repetitive codegen
+             (an optional dependency, only needed to do codegen).
+*/
+#include "tupl_platform.hpp" // #define platform specific macros
+                             // also #include'd at end to #undef all
 #include "tupl_traits.hpp"   // #includes "array_assign.hpp", required
 #include "array_compare.hpp" // C array comparison support is required
 
@@ -37,9 +39,9 @@
 # if __has_include("tupl_impl.hpp")
 #include "tupl_impl.hpp"
 # endif
-# else
+#else
 #include "tupl_dev/tupl_impl.hpp"
-# endif
+#endif
 
 #include "namespace.hpp"
 /*
