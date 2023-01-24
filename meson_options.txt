@@ -2,7 +2,7 @@ option('tests', type : 'feature', value : 'auto',
   description : 'Tests (auto-disabled if a subproject)')
 
 option('tupl_dev', type : 'feature', value : 'auto',
-  description : 'Download IREPEAT dependency for codegen')
+  description : 'Codegen; allow IREPEAT download, enable tupl_amalgam')
 
 option('namespace_id', type : 'string', value : 'lml',
   description : 'The namespace id for this library')

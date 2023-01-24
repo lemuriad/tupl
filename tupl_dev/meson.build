@@ -43,4 +43,7 @@ tupl_amalgam = custom_target(
   depfile: 'tupl_amalgam.d',
 )
 
+tupl_amalgam_dep = declare_dependency(sources : tupl_amalgam,
+             include_directories : include_directories('.'))
+
 endif
