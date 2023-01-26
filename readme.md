@@ -233,7 +233,7 @@ meet `ties`...
 
 `ties` type derives from `tupl` and adds a set of `operator=` overloads.  
 
-* **`ties<E...> : tupl<E...>`** $\,\, + \,\, \textsf{operator=}$
+* **`ties<E...>` : `tupl<E...>`** $+$ `operator=`
 
 `ties` remains trivially copyable while providing extra tuple assignments.  
 
