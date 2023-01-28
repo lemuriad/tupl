@@ -58,5 +58,5 @@ jobs:
       with:
         python-version: '3.x'
     - run: pip install meson ninja
-    - run: meson setup  ${{ matrix.config.meson_opt }} ${{ matrix.config.compiler }}/
+    - run: meson setup -vsenv ${{ matrix.config.meson_opt }} ${{ matrix.config.compiler }}/
     - run: meson test -C ${{ matrix.config.compiler }}/ -v
