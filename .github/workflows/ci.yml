@@ -1,0 +1,71 @@
+# Copyright 2023 Lemurian Labs
+# Distributed under the Boost Software License, Version 1.0.
+# (See accompanying file LICENSE or http://boost.org/LICENSE_1_0.txt)
+
+name: ci_meson
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - "**.cpp"
+      - "**.hpp"
+  pull_request:
+    paths:
+      - "**.cpp"
+      - "**.hpp"
+jobs:
+  meson-build:
+    name: ${{ matrix.config.name }}
+    runs-on: ${{ matrix.config.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        config:
+        - {
+            name: "Linux GCC-11 Rel c++20",
+            artifact: "Linux.tar.xz",
+            os: ubuntu-22.04,
+            compiler: gcc-11,
+            build_type: RelWithDebInfo,
+            cc: "gcc-11", cxx: "g++-11"
+          }
+        - {
+            name: "Linux Clang-12 Rel c++20",
+            artifact: "Linux.tar.xz",
+            os: ubuntu-22.04,
+            compiler: clang-12,
+            build_type: RelWithDebInfo,
+            cc: "clang-12", cxx: "clang++-12"
+          }
+        - {
+            name: "macOS Clang-14 Rel c++20",
+            artifact: "macOS.tar.xz",
+            os: macos-12,
+            compiler: clang-14,
+            build_type: RelWithDebInfo,
+            cc: "clang", cxx: "clang++"
+          }
+        - {
+            name: "Windows MSVC 2022 Rel c++20",
+            artifact: "Windows-MSVC.tar.xz",
+            os: windows-2022,
+            compiler: msvc,
+            build_type: RelWithDebInfo,
+            cc: "cl", cxx: "cl",
+          }
+    steps:
+    - uses: de-vri-es/setup-git-credentials@v2.0.10
+      with:
+        credentials: ${{secrets.GIT_CREDENTIALS}}
+    - uses: actions/checkout@v3
+    - uses: actions/setup-python@v4
+      with:
+        python-version: '3.x'
+    - run: pip install meson ninja
+    - uses: ilammy/msvc-dev-cmd@v1
+    - run: meson setup -Dtupl_dev=enabled ${{ matrix.config.compiler }}/
+      env:
+        CC: ${{ matrix.config.cc }},
+        CXX: ${{ matrix.config.cxx }}
+    - run: meson test -C ${{ matrix.config.compiler }}/ -v
