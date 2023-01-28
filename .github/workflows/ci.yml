@@ -18,6 +18,9 @@ jobs:
   meson-build:
     name: ${{ matrix.config.name }}
     runs-on: ${{ matrix.config.os }}
+    defaults:
+      run:
+        shell: bash
     strategy:
       fail-fast: false
       matrix:
@@ -55,7 +58,6 @@ jobs:
       with:
         python-version: '3.x'
     - run: pip install meson ninja
-    - uses: ilammy/msvc-dev-cmd@v1
     - run: meson setup -Dtupl_dev=enabled ${{ matrix.config.compiler }}/
       env:
         CXX: ${{ matrix.config.cxx }}

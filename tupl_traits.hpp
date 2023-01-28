@@ -32,9 +32,11 @@ using tupl_like_t = copy_cvref_t<Tupl,tupl_t<Tupl>>;
 // Here, implicit conversion T -> tupl_t is tested by reference binding
 // and a void functor is used to test for presence of a map function
 //
+constexpr auto tuplish_void_fn = [](auto&&...){};
+
 template <typename T>
 concept tuplish = requires (T& v) {
-  {map(tupl_like_t<T&>(v), [](auto&&...){})} -> std::same_as<void>;
+  {map(tupl_like_t<T&>(v), tuplish_void_fn)} -> std::same_as<void>;
 };
 
 // as_tupl_t(tup) cast to tupl_like_t (fwd the arg for value category)
