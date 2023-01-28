@@ -12,3 +12,6 @@ option('tupl_max_arity', type : 'integer', min : 0, value : 0x10,
 
 option('no_lupl', type : 'boolean', value : false,
   description : 'Do not generate lupl type or specializations')
+
+option('snitch_cmake', type : 'boolean', value : true,
+  description : 'Use cmake to configure snitch subproject dependency')

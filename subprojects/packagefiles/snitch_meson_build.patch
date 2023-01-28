@@ -13,23 +13,18 @@ index 0000000..526756b
 +)
 diff --git a/meson.build b/meson.build
 new file mode 100644
-index 0000000..e5fd38f
+index 0000000..892aa1a
 --- /dev/null
 +++ b/meson.build
-@@ -0,0 +1,106 @@
+@@ -0,0 +1,103 @@
 +project('snitch', 'cpp',
 +  default_options : ['cpp_std=c++20'],
-+  meson_version : '>=0.60.0',
-+  version : '1.0'
++  meson_version : '>=1.0.0',
++  version : '1.0.0'
 +)
 +
-+git = find_program('git')
-+git_hash = run_command(git,'log','-1','--format=%h'
-+                      ,check:true).stdout().strip()
-+
 +version = meson.project_version()
-+full_version = version + '.' + git_hash
-+vers = full_version.split('.')
++vers = version.split('.')
 +
 +conf_data = configuration_data()
 +
@@ -38,7 +33,9 @@ index 0000000..e5fd38f
 +conf_data.set('PROJECT_VERSION_MINOR', vers[1])
 +conf_data.set('PROJECT_VERSION_PATCH', vers[2])
 +
-+conf_data.set('SNITCH_FULL_VERSION', full_version)
++git_hash = run_command(find_program('git'),'log','-1','--format=%h'
++                      ,check:true).stdout().strip()
++conf_data.set('SNITCH_FULL_VERSION', version + '.' + git_hash)
 +
 +conf_data.set('SNITCH_MAX_TEST_CASES'         ,5000, description : 'Maximum number of test cases in a test application.')
 +conf_data.set('SNITCH_MAX_NESTED_SECTIONS'    ,8   , description : 'Maximum depth of nested sections in a test case.')
