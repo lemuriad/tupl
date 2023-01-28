@@ -42,28 +42,28 @@ echo "
 #define UINTPTR uintptr_t
 " > tupl_amalgam.hpp
 
-sed -n 12,87p ../tupl_platform.hpp >> tupl_amalgam.hpp
+sed -n /UNREACHABLE:/,/UNDEFINE/p ../tupl_platform.hpp | sed \$d >> tupl_amalgam.hpp
 
 cat ../tupl_dev/namespace.hpp >> tupl_amalgam.hpp
 
-sed -n 15,106p ../subprojects/c_array_support/util_traits.hpp >> tupl_amalgam.hpp
+sed -n '/^#include \"namespace.hpp\"/,//p' ../subprojects/c_array_support/util_traits.hpp | sed '1d;$d' >> tupl_amalgam.hpp
 
-sed -n '/^#include/d;63,275p' ../subprojects/c_array_support/c_array_support.hpp >> tupl_amalgam.hpp
+sed -n '/^#include \"namespace.hpp\"/,//p' ../subprojects/c_array_support/c_array_support.hpp | sed '/^#include/d' >> tupl_amalgam.hpp
 
-sed -n 91,366p ../subprojects/c_array_support/array_compare.hpp >> tupl_amalgam.hpp
+sed -n '/^#include \"namespace.hpp\"/,//p' ../subprojects/c_array_support/array_compare.hpp | sed '1d;$d' >> tupl_amalgam.hpp
 
-sed -n 97,275p ../subprojects/c_array_support/array_assign.hpp >> tupl_amalgam.hpp
+sed -n '/^#include \"namespace.hpp\"/,//p' ../subprojects/c_array_support/array_assign.hpp | sed '1d;$d' >> tupl_amalgam.hpp
 
-sed -n 14,296p ../tupl_traits.hpp >> tupl_amalgam.hpp
+sed -n '/^#include \"namespace.hpp\"/,//p' ../tupl_traits.hpp | sed '1d;$d' >> tupl_amalgam.hpp
 
 sed -n 15,\$p $1 >> tupl_amalgam.hpp
 
-sed -n 15,91p ../tupl_tie.hpp >> tupl_amalgam.hpp
+sed -n '/^#include \"namespace.hpp\"/,//p' ../tupl_tie.hpp | sed '1d;$d' >> tupl_amalgam.hpp
 
-sed -n 15,48p ../tupl_vals.hpp >> tupl_amalgam.hpp
+sed -n '/^#include \"namespace.hpp\"/,//p' ../tupl_vals.hpp | sed '1d;$d' >> tupl_amalgam.hpp
 
-sed -n 14,49p ../tupl_cmps.hpp >> tupl_amalgam.hpp
+sed -n '/^#include \"namespace.hpp\"/,//p' ../tupl_cmps.hpp | sed '1d;$d' >> tupl_amalgam.hpp
 
 cat ../tupl_dev/namespace.hpp >> tupl_amalgam.hpp
 
-sed -n 89,98p ../tupl_platform.hpp >> tupl_amalgam.hpp
+sed -n /UNDEFINE/,\$p ../tupl_platform.hpp | sed 1d >> tupl_amalgam.hpp

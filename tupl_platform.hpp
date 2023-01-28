@@ -85,7 +85,7 @@ _Pragma("GCC diagnostic pop")
 # endif
 #endif
 
-#else
+#else // UNDEFINE
 
 #undef NO_WARN_MISSING_BRACES
 #undef TYPEPACKEL
