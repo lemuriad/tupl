@@ -6,7 +6,7 @@ constexpr auto&& assign_elements(L&& l, T&&...v)
   noexcept(types_all<is_lval_nothrow_assignable,tupl_t<L>,tupl<T...>>)
   requires types_all<is_lval_assignable,tupl_t<L>,tupl<T...>>
 {
-  map(static_cast<tupl_like_t<L>&>(l),
+  map(as_tupl_t(l),
       [&](auto&...a) noexcept(
            types_all<is_lval_nothrow_assignable,tupl_t<L>,tupl<T...>>)
       { ((assign(a) = (T&&)v),...); });
@@ -23,8 +23,8 @@ constexpr void swap(L& l, L& r)
   requires types_all<std::is_swappable, tupl_t<L>>
 {
   enum:bool {X = types_all<std::is_nothrow_swappable, tupl_t<L>>};
-  map(static_cast<tupl_like_t<L>&>(l), [&r](auto&...t) noexcept(X) {
-    map(static_cast<tupl_like_t<L>&>(r), [&t...](auto&...u) noexcept(X)
+  map(as_tupl_t(l), [&r](auto&...t) noexcept(X) {
+    map(as_tupl_t(r), [&t...](auto&...u) noexcept(X)
     {
       (std::ranges::swap(t,u),...);
     });
@@ -60,7 +60,7 @@ struct assign_to<Lr>
       }(static_cast<tupl_t<R>const&>(r));
     else
       // copy or move assign all elements decided by RHS reference type
-      map(static_cast<tupl_like_t<R&&>>(r), [&](auto&&...u) noexcept(X)
+      map(as_tupl_t((R&&)r), [&](auto&&...u) noexcept(X)
       {
           assign_elements(l, (decltype(u))(u)...);
       });
