@@ -93,8 +93,8 @@ int[8],int[9],int[10],int[11],int[12],int[13],int[14],void,int[16]>>> );
 auto ir = fwds{1,1};
 SAME(decltype(ir), fwds<int&&,int&&>);
 
-auto ti = fwds{1,1};
-SAME(decltype(ti), fwds<int&&,int&&>);
+auto tui = fwds{1,1};
+SAME(decltype(tui), fwds<int&&,int&&>);
 
 constexpr tupl tupl8 = cat(tupl{1},tupl{2},tupl{3},tupl{4}
                           ,tupl{5},tupl{6},tupl{7},tupl{8},tupl{9});
@@ -753,13 +753,13 @@ void tupl_cats()
   SAME( decltype(t12), decltype(ci12) );
   SAME( decltype(t12), tupl<int[2]> const );
 
-
+#ifndef _MSC_VER
   constexpr tupl abc = cat(tupl{'a'},tupl{"bc"});
 
   static_assert( sizeof abc == 4 );
   static_assert( abc == tupl{'a',"bc"} );
   static_assert( __builtin_bit_cast(tupl<char[4]>,abc) == tupl{"abc"});
-
+#endif
   constexpr tupl tupl8 = cat(tupl{1},tupl{2},tupl{3},tupl{4}
                                  ,tupl{5},tupl{6},tupl{7},tupl{8});
   static_assert( tupl8 == tupl{1,2,3,4,5,6,7,8});
