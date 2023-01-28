@@ -266,7 +266,7 @@ namespace impl {
 template <typename U> auto tmove(...) -> std::remove_cvref_t<U>&&;
 #ifdef _MSC_VER
 template <typename U> auto tmove(...) -> std::remove_cvref_t<U>&
-  requires std::is_function_v<<std::remove_cvref_t<U>>;
+  requires std::is_function_v<std::remove_cvref_t<U>>;
 #endif
 template <typename U> auto tmove(...) -> std::remove_cvref_t<U>
   requires (sizeof(U)<=16 && !c_array<U> && std::is_trivially_copyable_v
