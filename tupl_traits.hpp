@@ -207,7 +207,7 @@ template <
   typename X8=void,typename X9=void,typename Xa=void,typename Xb=void,
   typename Xc=void,typename Xd=void,typename Xe=void,typename Xf=void,
   typename...T>
-constexpr decltype(auto) type_pack_element_t = []<size_t I>()
+constexpr auto type_pack_element_t = []<size_t I>()
 {
   switch (I)
   {
