@@ -26,7 +26,7 @@
 #include "IREPEAT.hpp"
 
 #include "tupl_impl_noedit_warn.hpp" // Warning banner "generated file!"
-//
+
 #ifndef TUPL_MAX_ARITY /* the maximum number of elements specified as
                           parenthesized hex digits so (1)(0) == 16 */
 #define TUPL_MAX_ARITY (1)(0)

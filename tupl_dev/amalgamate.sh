@@ -15,8 +15,7 @@ This bash script generates single header include "tupl_amalgam.hpp".
     exit
 fi
 
-echo "
-//  Copyright (c) 2023 Lemurian Labs https://lemurianlabs.com/
+echo "//  Copyright (c) 2023 Lemurian Labs https://lemurianlabs.com/
 //
 //  Distributed under the Boost Software License, Version 1.0.
 //        http://www.boost.org/LICENSE_1_0.txt
@@ -56,7 +55,7 @@ sed -n '/^#include \"namespace.hpp\"/,//p' ../subprojects/c_array_support/array_
 
 sed -n '/^#include \"namespace.hpp\"/,//p' ../tupl_traits.hpp | sed '1d;$d' >> tupl_amalgam.hpp
 
-sed -n 15,\$p $1 >> tupl_amalgam.hpp
+sed -n '/\/\/$/',\$p $1 >> tupl_amalgam.hpp
 
 sed -n '/^#include \"namespace.hpp\"/,//p' ../tupl_tie.hpp | sed '1d;$d' >> tupl_amalgam.hpp
 

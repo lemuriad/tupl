@@ -13,7 +13,7 @@ compiler_id = cpp.get_id()
 if compiler_id == 'msvc' or compiler_id == 'clang-cl'
   prepro_args = ['/I..\subprojects\IREPEAT','/std:c++latest','/Zc:preprocessor','/C','/TP','/P']
 elif compiler_id == 'clang'
-  prepro_args = ['-I../subprojects/IREPEAT','-MMD','-nostdinc','-C','-Wno-c++20-compat','-Wno-pedantic']
+  prepro_args = ['-I../subprojects/IREPEAT','-nostdinc','-C','-Wno-c++20-compat','-Wno-pedantic']
 else
   prepro_args = ['-I../subprojects/IREPEAT','-MMD','-nostdinc','-C','-Wno-pedantic']
 endif
