@@ -65,7 +65,7 @@ template <tuplish Tupl> inline constexpr auto tupl_size
 // types_all<LT,P> meta function -> (P<T>() && ...) for LT = L<T...>
 //
 template <template <typename...> class P, typename...T>
-inline constexpr auto types_all
+inline constexpr bool types_all
          = requires {{types_all<P,T...>}->std::same_as<bool>;};
 //
 template <template <typename...> class L, typename...T,
@@ -264,6 +264,10 @@ namespace impl {
 // Helpers to compute tupl_move_t, recursively
 //
 template <typename U> auto tmove(...) -> std::remove_cvref_t<U>&&;
+#ifdef _MSC_VER
+template <typename U> auto tmove(...) -> std::remove_cvref_t<U>&
+  requires std::is_function_v<<std::remove_cvref_t<U>>;
+#endif
 template <typename U> auto tmove(...) -> std::remove_cvref_t<U>
   requires (sizeof(U)<=16 && !c_array<U> && std::is_trivially_copyable_v
                                              <std::remove_cvref_t<U>>);
