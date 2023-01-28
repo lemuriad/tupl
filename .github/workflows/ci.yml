@@ -47,7 +47,6 @@ jobs:
             os: windows-2022,
             compiler: msvc,
             build_type: RelWithDebInfo,
-            cxx: "cl",
           }
     steps:
     - uses: de-vri-es/setup-git-credentials@v2.0.10

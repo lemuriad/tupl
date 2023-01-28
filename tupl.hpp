@@ -23,8 +23,6 @@
   Depends on IREPEAT preprocessor library of for repetitive codegen
              (an optional dependency, only needed to do codegen).
 */
-#include "tupl_platform.hpp" // #define platform specific macros
-                             // also #include'd at end to #undef all
 #include "tupl_traits.hpp"   // #includes "array_assign.hpp", required
 #include "array_compare.hpp" // C array comparison support is required
 

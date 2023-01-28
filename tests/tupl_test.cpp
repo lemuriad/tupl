@@ -221,7 +221,7 @@ void catr()
 
 #include <string>
 using std::string_literals::operator""s;
-static_assert( "c++"s == "c++");
+//static_assert( "c++"s == "c++"); // not constexpr on clang yet
 
 tupl stringstd{"c++"s,20};
 
@@ -229,7 +229,8 @@ int main()
 {
   tupl<std::string> strng = {"v"};
   strng = {"X"};
-  stringstd == cmps{+"c++",20};
+  bool tst = stringstd == cmps{+"c++",20};
+  assert(tst);
 
   tupl<char[4],int> cppstd; // uninitialized
   cppstd = {"c++",20};     // 'aggregate assignment'
@@ -237,7 +238,7 @@ int main()
   cppstd = tupl<char[4],int>{"c++",20}; // same as above
 
   char cpp[]{"c--"};  // array lvalue variable
-  int std;
+  int std = 20;
 //cppstd = {cpp, }; // FAIL: array lvalue won't init
 
   assign(cppstd) = {cpp, 20}; // works

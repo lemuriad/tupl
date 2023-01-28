@@ -37,7 +37,7 @@ template <typename...E> struct cmps : tupl<E...>
     return equals(l,r);
   }
   template <tuplish R>
-  friend constexpr bool operator==(cmps<>, R const& r) noexcept
+  friend constexpr bool operator==(cmps, R const& r) noexcept
     requires (sizeof...(E) == 0 && requires { equals(r,{}); })
   {
     return equals(r,{});
