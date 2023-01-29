@@ -1,12 +1,14 @@
 #include "tupl.hpp"
 
 void ff() {
-//constexpr auto mps = lml::tupl_mptrs<lml::tupl<int,bool>>;
-auto const& [ti,tb] = lml::tupl_mptrs<lml::tupl<int,bool>>;
+constexpr auto mps = lml::tupl_mptrs<lml::tupl<int,bool>>;
+//auto const& [ti,tb] = lml::tupl_mptrs<lml::tupl<int,bool>>;
+constexpr auto ti = mps.x0;
+constexpr auto tb = mps.x1;
 
 constexpr lml::tupl tib = {1,true};
 
-static_assert( tib.*ti == 1 );
+static_assert( tib.*ti == 1 && tib.*tb );
 static_assert( ti == &lml::tupl<int,bool>::x0 );
 }
 

@@ -272,10 +272,10 @@ void tupl_val_assign()
 
   tupl<> t;
   t = {};
-
+#ifndef _MSC_VER
   static_assert( get<0>(tupl{1} = {}) == 0 );
   static_assert( get<0>(tupl{2} = {1}) == 1 );
-
+#endif
   tupl<int> ti;
   (ti = {}) = {1};
   ti = tupl{2};
@@ -439,7 +439,7 @@ auto tupl_assign_SMFops()
   assert(ops[1] == move_ass);
 
   clear(ops);
-  tupl sta {smn(),tupl{"str"}};
+  tupl<smn,tupl<char[4]>> sta {smn{},tupl<char[4]>{"str"}};
   assert(ops[0] == 1);
   assert(ops[1] == def_cons);
 
