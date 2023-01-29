@@ -11,6 +11,35 @@ index 0000000..526756b
 +  configuration: conf_data,
 +  install_dir: 'include/snitch'
 +)
+diff --git a/include/snitch/snitch_config.hpp.config b/include/snitch/snitch_config.hpp.config
+index 6f9dac9..99ea37a 100644
+--- a/include/snitch/snitch_config.hpp.config
++++ b/include/snitch/snitch_config.hpp.config
+@@ -40,19 +40,19 @@
+ #    define SNITCH_MAX_COMMAND_LINE_ARGS ${SNITCH_MAX_COMMAND_LINE_ARGS}
+ #endif
+ #if !defined(SNITCH_DEFINE_MAIN)
+-#    cmakedefine01 SNITCH_DEFINE_MAIN
++#cmakedefine01 SNITCH_DEFINE_MAIN
+ #endif
+ #if !defined(SNITCH_WITH_EXCEPTIONS)
+-#    cmakedefine01 SNITCH_WITH_EXCEPTIONS
++#cmakedefine01 SNITCH_WITH_EXCEPTIONS
+ #endif
+ #if !defined(SNITCH_WITH_TIMINGS)
+-#    cmakedefine01 SNITCH_WITH_TIMINGS
++#cmakedefine01 SNITCH_WITH_TIMINGS
+ #endif
+ #if !defined(SNITCH_WITH_SHORTHAND_MACROS)
+-#    cmakedefine01 SNITCH_WITH_SHORTHAND_MACROS
++#cmakedefine01 SNITCH_WITH_SHORTHAND_MACROS
+ #endif
+ #if !defined(SNITCH_DEFAULT_WITH_COLOR)
+-#    cmakedefine01 SNITCH_DEFAULT_WITH_COLOR
++#cmakedefine01 SNITCH_DEFAULT_WITH_COLOR
+ #endif
+ // clang-format on
+ 
 diff --git a/meson.build b/meson.build
 new file mode 100644
 index 0000000..892aa1a
@@ -134,11 +163,10 @@ index 0000000..c5c4766
 +
 +option('create_library', type : 'feature', value : 'auto',
 +  description : 'Build a compiled library version of snitch.')
-diff --git a/tests/meson.builld b/tests/meson.builld
+diff --git a/tests/meson.build b/tests/meson.build
 new file mode 100644
-index 0000000..2b196bd
+index 0000000..4d15015
 --- /dev/null
-+++ b/tests/meson.builld
++++ b/tests/meson.build
 @@ -0,0 +1 @@
 +# placeholder for test targets under meson
-\ No newline at end of file
