@@ -37,6 +37,9 @@ Also at [boost.org](http://www.boost.org/LICENSE_1_0.txt) and accompanying file 
 
 </details>
 
+[![ci_meson](https://github.com/Lemurian-Labs/tupl/actions/workflows/ci.yml/badge.svg)](https://github.com/Lemurian-Labs/tupl/actions/workflows/ci.yml)
+gcc 12, clang 14, MSVC VS 17.4.4 19.34.31937
+
 ----
 
 * [`tupl`](#tupl-introduction) introduction
@@ -565,10 +568,13 @@ It has no meson support yet, so CMake is required to set up  build targets.
 
 ## Build
 
-`tupl_amalgam.hpp` can be copied on its own as a way to get started.
+See the demo project
+[`tupl_play`](https://github.com/Lemurian-Labs/tupl_play)
+for an example client set up, with meson.
 
-A build setup is recommended though, even for header-only client projects.  
-See the demo project (ToDo) for an example client set up, with meson.
+A build setup is recommended, even for header-only projects, though no  
+build step is necessary. The single header `tupl_amalgam.hpp` provides  
+a quick way to get started with no dependencies beyond C++ std library.  
 
 A meson.build setup is provided. CMake is coming.
 
