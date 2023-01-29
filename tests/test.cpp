@@ -439,7 +439,7 @@ auto tupl_assign_SMFops()
   assert(ops[1] == move_ass);
 
   clear(ops);
-  tupl<smn,tupl<char[4]>> sta {smn{},tupl<char[4]>{"str"}};
+  tupl<smn,tupl<char[4]>> sta {{},tupl<char[4]>{"str"}};
   assert(ops[0] == 1);
   assert(ops[1] == def_cons);
 
