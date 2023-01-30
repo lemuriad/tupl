@@ -485,7 +485,7 @@ with added assignment ops, plus `tie` and `getie` functions.
 with all required headers from the `c_array_support` library dependency.  
 The amalgam is auto-generated (so don't edit it!).
 
-<a href=https://godbolt.org/><img src=tupl_dev/CE.png width=52 style="vertical-align:middle"></a>
+<a href=https://godbolt.org/z/333GYoo4s><img src=tupl_dev/CE.png width=52 style="vertical-align:middle"></a>
 Compiler Explorer link with `#include "tupl_amalgam.hpp"`
 
 ## Dependencies
