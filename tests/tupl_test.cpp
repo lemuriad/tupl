@@ -191,13 +191,12 @@ static_assert( MSVC(!) std::is_trivial_v<tupl_scalar_refs>);
 
 auto tup_copy_assign(char(&cstr)[4],bool b)
 {
+  vals<char[4],bool> rupl = {"c++",true};
+  rupl = {std::move(cstr),std::move(b)};
 //  assign_to{tup} = {cstr,b}; // error: no match for ‘operator=’
   assign_elements(tup, cstr,b);
   assign(tup) = tie(cstr,b);
   return tup = (vals<char[4],bool>{} = {cstr,b});
-
-  vals<char[4],bool> rupl = {"c++",true};
-  rupl = {std::move(cstr),std::move(b)};
 }
 
 #include <iostream>
@@ -222,7 +221,7 @@ void catr()
 }
 
 #include <string>
-using std::string_literals::operator""s;
+using namespace std::string_literals;
 //static_assert( "c++"s == "c++"); // not constexpr on clang yet
 
 tupl stringstd{"c++"s,20};

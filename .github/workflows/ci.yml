@@ -47,7 +47,7 @@ jobs:
             os: windows-2022,
             compiler: msvc,
             build_type: RelWithDebInfo,
-            meson_opt:
+            meson_opt: -Dsnitch_cmake=true
           }
     steps:
     - uses: de-vri-es/setup-git-credentials@v2.0.10

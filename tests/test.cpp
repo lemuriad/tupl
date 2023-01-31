@@ -760,9 +760,9 @@ void tupl_cats()
   static_assert( abc == tupl{'a',"bc"} );
   static_assert( __builtin_bit_cast(tupl<char[4]>,abc) == tupl{"abc"});
 #endif
-  constexpr tupl tupl8 = cat(tupl{1},tupl{2},tupl{3},tupl{4}
+  constexpr tupl tupl_8 = cat(tupl{1},tupl{2},tupl{3},tupl{4}
                                  ,tupl{5},tupl{6},tupl{7},tupl{8});
-  static_assert( tupl8 == tupl{1,2,3,4,5,6,7,8});
+  static_assert( tupl_8 == tupl{1,2,3,4,5,6,7,8});
 
   constexpr tupl ch16 = cat(tupl{'0'},tupl{'1'},tupl{'2'},tupl{'3'}
                                 ,tupl{'4'},tupl{'5'},tupl{'6'},tupl{'7'}
