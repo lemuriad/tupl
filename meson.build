@@ -34,7 +34,7 @@ if get_option('snitch_cmake')
 snitch_cmake = import('cmake').subproject('snitch')
 snitch_dep = snitch_cmake.dependency('snitch')
 else
-snitch_dep = subproject('snitch').get_variable('snitch_dep')
+snitch_dep = dependency('snitch')
 endif
 
 subdir('tests')
