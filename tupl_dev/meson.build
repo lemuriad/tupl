@@ -8,6 +8,9 @@ else
   error('Exceeded the maximum number of tupl elements, 0xfff')
 endif
 
+
+cpp = meson.get_compiler('cpp')
+
 compiler_id = cpp.get_id()
 
 if compiler_id == 'msvc' or compiler_id == 'clang-cl'
