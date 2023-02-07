@@ -32,6 +32,7 @@ jobs:
             compiler: gcc-12,
             build_type: RelWithDebInfo,
             meson_opt: -Dtupl_dev=enabled
+            cxx: "g++-12"
           }
         - {
             name: "Linux Clang-14 Rel c++20",
@@ -40,6 +41,7 @@ jobs:
             compiler: clang-14,
             build_type: RelWithDebInfo,
             meson_opt: -Dtupl_dev=enabled
+            cxx: "clang++-14"
           }
         - {
             name: "Windows MSVC 2022 Rel c++20",
@@ -48,6 +50,7 @@ jobs:
             compiler: msvc,
             build_type: RelWithDebInfo,
             meson_opt: -Dsnitch_cmake=true
+            cxx: cl
           }
     steps:
     - uses: de-vri-es/setup-git-credentials@v2.0.10
@@ -59,4 +62,6 @@ jobs:
         python-version: '3.x'
     - run: pip install meson ninja
     - run: meson setup --vsenv ${{ matrix.config.meson_opt }} ${{ matrix.config.compiler }}/
+      env:
+        CXX: ${{ matrix.config.cxx }}
     - run: meson test -C ${{ matrix.config.compiler }}/ -v
