@@ -18,7 +18,7 @@ subdir('tupl_dev')
 
 tupl_dep = declare_dependency(
   dependencies : [c_array_support_dep, IREPEAT_dep, tupl_impl_dep],
-  include_directories : include_directories('.','tupl_dev')
+  include_directories : include_directories('.')
 )
 
 # tests are auto disabled when used as a subproject

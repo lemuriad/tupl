@@ -23,6 +23,7 @@ test('tupl_dev'
                ,cpp_args : ['-DTUPL_IMPL_PREPROCESS'
                            ,'-DNAMESPACE_ID=lml']
                ,dependencies: [tupl_dep]
+               ,include_directories: tupl_dev_dir
                )
 )
 endif
