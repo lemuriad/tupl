@@ -485,7 +485,7 @@ with added assignment ops, plus `tie` and `getie` functions.
 with all required headers from the `c_array_support` library dependency.  
 The amalgam is auto-generated (so don't edit it!).
 
-<a href=https://godbolt.org/z/333GYoo4s><img src=tupl_dev/CE.png width=52 style="vertical-align:middle"></a>
+<a href=https://godbolt.org/z/333GYoo4s><img src=tupl_impl/CE.png width=52 style="vertical-align:middle"></a>
 Compiler Explorer link with `#include "tupl_amalgam.hpp"`
 
 ## Dependencies
@@ -549,7 +549,7 @@ The build scripts fetch all dependencies from github repos automatically
 
 The [`IREPEAT`](https://github.com/willwray/IREPEAT)
 preprocessor library is used to generate `"tupl_impl.hpp"`  
-by preprocessing `tupl_dev/tupl_impl.pp"` and component includes:
+by preprocessing `tupl_impl/tupl_impl.pp"` and component includes:
 
 ```mermaid
   flowchart LR
@@ -596,7 +596,7 @@ A meson.build setup is provided. CMake is coming.
 ```
 
 The provided build scripts set up a target to auto-generate `tupl_impl.hpp`  
-initially, and on recompiles if the `tupl_dev` implementation files are edited.
+initially, and on recompiles if the `tupl_impl` implementation files are edited.
 
 When the `tupl` library is used as a meson subproject dependency then test  
 targets are not set up by default, and the `snitch` library is not downloaded.
@@ -607,23 +607,23 @@ only when build option `tupl_dev=enabled` is configured (not by default).
 ### `tupl_impl.hpp` codegen
 
 Setting symbol `TUPL_IMPL_PREPROCESS` forces codegen on all recompiles  
-by conditionally including the un-preprocessed `tupl_dev/tupl_impl.pp`  
+by conditionally including the un-preprocessed `tupl_impl/tupl_impl.pp`  
 instead of its preprocessed output `tupl_impl.hpp`.
 
 It's possible to generate `tupl_impl.hpp` by direct preprocessor invocation,  
 e.g. with these GCC options:
 
 ```bash
-g++ -I. -Isubprojects/IREPEAT -Itupl_dev
+g++ -I. -Isubprojects/IREPEAT -Itupl_impl
     -MMD -nostdinc -C -E -P
-    -o tupl_impl.hpp tupl_dev/tupl_impl.pp
+    -o tupl_impl.hpp tupl_impl/tupl_impl.pp
 ```
 
 The build target currently isn't invocable from the meson commandline.  
 It can currently be invoked from the ninja backend via a circuitous path:
 
 ```bash
-ninja -C build tupl_dev/preprocessor.p/../tupl_impl.hpp
+ninja -C build tupl_impl/preprocessor.p/../tupl_impl.hpp
 ```
 
 

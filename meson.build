@@ -14,7 +14,7 @@ c_array_support_dep = dependency('c_array_support')
 
 IREPEAT_dep = dependency('IREPEAT', required : tupl_dev.allowed())
 
-subdir('tupl_dev')
+subdir('tupl_impl')
 
 tupl_dep = declare_dependency(
   dependencies : [c_array_support_dep, IREPEAT_dep, tupl_impl_dep],

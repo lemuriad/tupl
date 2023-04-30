@@ -17,13 +17,13 @@ test('amalgam'
 endif
 
 if tupl_dev.allowed()
-test('tupl_dev'
-    ,executable('tupl_dev'
+test('tupl_impl'
+    ,executable('tupl_impl'
                ,'tupl_test.cpp'
                ,cpp_args : ['-DTUPL_IMPL_PREPROCESS'
                            ,'-DNAMESPACE_ID=lml']
                ,dependencies: [tupl_dep]
-               ,include_directories: tupl_dev_dir
+               ,include_directories: tupl_impl_dir
                )
 )
 endif

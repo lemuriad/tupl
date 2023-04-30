@@ -24,19 +24,19 @@ if no_lupl
 prepro_args += ['-DNO_LUPL']
 endif
 
-tupl_dev_dir = include_directories('.')
+tupl_impl_dir = include_directories('.')
 
 # The preprocessing codegen step, ideally it would accept IREPEAT_dep;
 # the -I include path is currently added in compile_args, 'unsandboxed'
 tupl_impl = cpp.preprocess('tupl_impl.pp',
             output : '../../tupl_impl.hpp',
             compile_args : prepro_args + ['-DTUPL_MAX_ARITY='+ARITY],
-            include_directories : tupl_dev_dir,
+            include_directories : tupl_impl_dir,
            )
 
 tupl_impl_dep = declare_dependency(sources : tupl_impl)
 
-if tupl_dev.enabled()
+if codegen.enabled()
 
 tupl_amalgam = custom_target(
   input: tupl_impl,
@@ -47,6 +47,6 @@ tupl_amalgam = custom_target(
 )
 
 tupl_amalgam_dep = declare_dependency(sources : tupl_amalgam,
-             include_directories : tupl_dev_dir)
+             include_directories : tupl_impl_dir)
 
 endif

@@ -43,7 +43,7 @@ echo "//  Copyright (c) 2023 Lemurian Labs https://lemurianlabs.com/
 
 sed -n /UNREACHABLE:/,/UNDEFINE/p ../tupl_platform.hpp | sed \$d >> tupl_amalgam.hpp
 
-cat ../tupl_dev/namespace.hpp >> tupl_amalgam.hpp
+cat ../tupl_impl/namespace.hpp >> tupl_amalgam.hpp
 
 sed -n '/^#include \"namespace.hpp\"/,//p' ../subprojects/c_array_support/util_traits.hpp | sed '1d;$d' >> tupl_amalgam.hpp
 
@@ -63,6 +63,6 @@ sed -n '/^#include \"namespace.hpp\"/,//p' ../tupl_vals.hpp | sed '1d;$d' >> tup
 
 sed -n '/^#include \"namespace.hpp\"/,//p' ../tupl_cmps.hpp | sed '1d;$d' >> tupl_amalgam.hpp
 
-cat ../tupl_dev/namespace.hpp >> tupl_amalgam.hpp
+cat ../tupl_impl/namespace.hpp >> tupl_amalgam.hpp
 
 sed -n /UNDEFINE/,\$p ../tupl_platform.hpp | sed 1d >> tupl_amalgam.hpp
