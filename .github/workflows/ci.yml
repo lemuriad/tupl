@@ -31,7 +31,7 @@ jobs:
             os: ubuntu-22.04,
             compiler: gcc-12,
             build_type: RelWithDebInfo,
-            meson_opt: -Dtupl_dev=enabled,
+            meson_opt: -Dtupl_codegen=enabled,
             cxx: "g++-12"
           }
         - {
@@ -40,7 +40,7 @@ jobs:
             os: ubuntu-22.04,
             compiler: clang-14,
             build_type: RelWithDebInfo,
-            meson_opt: -Dtupl_dev=enabled,
+            meson_opt: -Dtupl_codegen=enabled,
             cxx: "clang++-14"
           }
         - {

@@ -6,7 +6,7 @@ test('sanity'
                )
 )
 
-if tupl_dev.enabled()
+if codegen.enabled()
 test('amalgam'
     ,executable('tupl_amalgam_test'
                ,'tupl_amalgam_test.cpp'
@@ -16,7 +16,7 @@ test('amalgam'
 )
 endif
 
-if tupl_dev.allowed()
+if codegen.allowed()
 test('tupl_impl'
     ,executable('tupl_impl'
                ,'tupl_test.cpp'

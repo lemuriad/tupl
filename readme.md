@@ -602,7 +602,7 @@ When the `tupl` library is used as a meson subproject dependency then test
 targets are not set up by default, and the `snitch` library is not downloaded.
 
 A custom target is added to auto-generate the `tupl_amalgam.hpp` header,  
-only when build option `tupl_dev=enabled` is configured (not by default).
+only when build option `tupl_codegen=enabled` is configured (not by default).
 
 ### `tupl_impl.hpp` codegen
 
