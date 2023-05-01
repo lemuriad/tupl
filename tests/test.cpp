@@ -1,4 +1,4 @@
-#include "tupl_traits.hpp"
+#include <tupl/tupl_traits.hpp>
 
 #define SAME(...)static_assert(std::is_same_v<__VA_ARGS__>)
 
@@ -88,7 +88,7 @@ int[8],int[9],int[10],int[11],int[12],int[13],int[14],void,int[16]>>> );
 
 #include "snitch/snitch.hpp"
 
-#include "tupl.hpp"
+#include <tupl/tupl.hpp>
 
 auto ir = fwds{1,1};
 SAME(decltype(ir), fwds<int&&,int&&>);
@@ -236,7 +236,7 @@ struct explct { explicit explct() = default; };
 
 #include <cassert>
 
-#include "tupl_tie.hpp"
+#include <tupl/tupl_tie.hpp>
 
 //static_assert( tuplish<ties<int&, long int&>> );
 
@@ -463,7 +463,7 @@ auto tupl_assign_SMFops()
   assert(ops[3] == destruct);
 }
 
-#include "tupl_vals.hpp"
+#include <tupl/tupl_vals.hpp>
 
 // test("tupl tie assign")
 void tupl_tie_assign()

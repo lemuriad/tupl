@@ -24,7 +24,7 @@
              (an optional dependency, only needed to do codegen).
 */
 #include "tupl_traits.hpp"   // #includes "array_assign.hpp", required
-#include "array_compare.hpp" // C array comparison support is required
+#include <array_compare.hpp> // C array comparison support is required
 
 #include "namespace.hpp"
 

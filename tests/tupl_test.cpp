@@ -1,4 +1,4 @@
-#include "tupl.hpp"
+#include <tupl/tupl.hpp>
 
 void ff() {
 constexpr auto mps = lml::tupl_mptrs<lml::tupl<int,bool>>;
@@ -76,8 +76,8 @@ auto tupl_API(lml::tupl<int,unsigned,char[2]> tup={})
 
 //static_assert( sizeof(tupl_API()) == 16 ); // GCC = 12
 
-#include "tupl_tie.hpp"  // ties operator= overloads
-#include "tupl_cmps.hpp" // cmps operator== & <=>
+#include <tupl/tupl_tie.hpp>  // ties operator= overloads
+#include <tupl/tupl_cmps.hpp> // cmps operator== & <=>
 
 bool tie_API(int i, unsigned u, char(&c2)[2])
 {
@@ -187,7 +187,7 @@ static_assert(!std::is_trivially_default_constructible<tupl_scalar_refs>());
 static_assert( MSVC(!) std::is_trivial_v<tupl_scalar_refs>);
 
 #include <memory>
-#include "tupl_vals.hpp"
+#include <tupl/tupl_vals.hpp>
 
 auto tup_copy_assign(char(&cstr)[4],bool b)
 {

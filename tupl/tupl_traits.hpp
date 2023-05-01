@@ -9,7 +9,7 @@
 #define LML_TUPL_TRAITS_HPP
 
 #include "tupl_platform.hpp" // #define platform specific macros
-#include "array_assign.hpp"  // is_assignable traits
+#include <array_assign.hpp>  // is_assignable traits
 
 #include "namespace.hpp"
 
