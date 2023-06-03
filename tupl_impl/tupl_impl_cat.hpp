@@ -22,7 +22,7 @@ constexpr auto cat_ctad_t(seq_T<IJ_t, IJ...>)
 
 } // impl
 
-// cat_t<X,TL...> -> X<E...> concatenation type of tuplish element types
+// cat_t<TL...> -> tupl<E...> concatenation type of tuplish element types
 //
 template <tuplish...TL>
 using cat_t = decltype(impl::cat_t<std::remove_cvref_t<TL>...>
