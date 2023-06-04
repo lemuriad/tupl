@@ -34,7 +34,10 @@ tupl_impl = cpp.preprocess('tupl_impl.pp',
             include_directories : tupl_impl_dir,
            )
 
-tupl_impl_dep = declare_dependency(sources : tupl_impl)
+tupl_impl_dep = declare_dependency(
+  sources : tupl_impl,
+  include_directories : tupl_impl_dir,
+)
 
 if codegen.enabled()
 
