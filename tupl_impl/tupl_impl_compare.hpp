@@ -5,11 +5,11 @@
 */
 template <int...I, tuplish L, tuplish R>
 constexpr auto compare3way(L const& l,R const& r) noexcept
-  requires (tupl_size<L> != tupl_size<R>
+  requires (tupl_size_v<L> != tupl_size_v<R>
          || types_all<is_three_way_comparable_with,tupl_t<L>,tupl_t<R>>)
 {
-  enum { endl = tupl_size<L>
-       , endr = tupl_size<R> };
+  enum { endl = tupl_size_v<L>
+       , endr = tupl_size_v<R> };
   constexpr auto lr = endl<=>endr;
   constexpr auto end = lr < 0 ? endl : endr;
   constexpr compare_three_way cmp;

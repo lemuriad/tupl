@@ -26,14 +26,14 @@ constexpr auto cat_ctad_t(seq_T<IJ_t, IJ...>)
 //
 template <tuplish...TL>
 using cat_t = decltype(impl::cat_t<std::remove_cvref_t<TL>...>
-                                  (kron_seq_t<tupl_size<TL>...>{}));
+                                  (kron_seq_t<tupl_size_v<TL>...>{}));
 
 // cat_ctad_t<X,TL...> -> decltype( X{fwd<E>()...} )
 // concatenation type of forwarded element types as deduced by X's CTAD
 //
 template <template<typename...>class X, tuplish...TL>
 using cat_ctad_t = decltype(impl::cat_ctad_t<X,tupl_fwd_t<TL>...>
-                                  (kron_seq_t<tupl_size<TL>...>{}));
+                                  (kron_seq_t<tupl_size_v<TL>...>{}));
 
 /*
   tupl_init; tupl aggregate initialization function overloads
@@ -96,7 +96,7 @@ constexpr auto cat(TL&&...tl) noexcept(
                           type_list_element_t<IJ.i, tupl<TL...>>>>...>
                          (get<IJ.j>(get<IJ.i>(fwds{(TL&&)tl...}))...);
   }
-  (kron_seq_t<tupl_size<TL>...>{});
+  (kron_seq_t<tupl_size_v<TL>...>{});
 }
 
 // cat<X>(t...) concatenate tuplish t's to X{v...} using X's CTAD
@@ -116,5 +116,5 @@ constexpr auto cat(TL&&...tl) noexcept(
   {
     return tupl_init<X>(get<IJ.j>(get<IJ.i>(fwds{(TL&&)tl...}))...);
   }
-  (kron_seq_t<tupl_size<TL>...>{});
+  (kron_seq_t<tupl_size_v<TL>...>{});
 }

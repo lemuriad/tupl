@@ -86,7 +86,7 @@ constexpr auto tie_fwd(T&&...t) noexcept -> ties<T&&...> const
 template <unsigned...I>
 constexpr auto getie(tuplish auto&& t) noexcept
   -> ties<decltype(get<I>((decltype(t))t))...> const
-     requires ((I < tupl_size<decltype(t)>) && ...)
+     requires ((I < tupl_size_v<decltype(t)>) && ...)
     { return {get<I>((decltype(t))t)...}; }
 
 #include "namespace.hpp"

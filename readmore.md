@@ -281,7 +281,7 @@ The `cstring_tupl` concept can be coded as below, with `ntbs` helper
 
   template <tupl s>
   concept cstring_tupl
-                = tupl_size<decltype(s)> == 1
+                = tupl_size_v<decltype(s)> == 1
                   && ntbs(s.x0))
 ```
 

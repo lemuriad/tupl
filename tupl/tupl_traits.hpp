@@ -46,27 +46,44 @@ template <tuplish T>
 constexpr auto as_tupl_t(T&& t) noexcept -> tupl_like_t<T&&>
 { return static_cast<tupl_like_t<T&&>>(t); }
 
+// typelist
+//
+template <typename TL>
+inline constexpr bool is_typelist_v = false;
+
+template <template <typename...> class L, typename...T>
+inline constexpr bool is_typelist_v<L<T...>> = true;
+
+template <typename TL>
+concept typelist = is_typelist_v<TL>;
+
 // type_list
 //
 template <typename...> struct type_list {};
 
-// type_list_size<T> the number of elements E in type list T = L<E...>
+// type_list_size_v<T> the number of elements E in type list T = L<E...>
 //
-template <typename T> extern const size_t type_list_size;
+template <typelist L> inline constexpr size_t type_list_size_v
+ = NOT_DEFINED(type_list_size_v<L>);
 //
 template <template <typename...> class L, typename...E>
-inline constexpr auto type_list_size<L<E...>> = sizeof...(E);
+inline constexpr auto type_list_size_v<L<E...>> = sizeof...(E);
 
-// tupl_size<Tupl> number of tupl elements (requires complete type)
+// tupl_size_v<Tupl> number of tupl elements (requires complete type)
 //
-template <tuplish Tupl> inline constexpr auto tupl_size
-                                       = type_list_size<tupl_t<Tupl>>;
+template <tuplish Tupl> inline constexpr auto tupl_size_v
+                                       = type_list_size_v<tupl_t<Tupl>>;
 
-// types_all<LT,P> meta function -> (P<T>() && ...) for LT = L<T...>
-//
-template <template <typename...> class P, typename...T>
+/* types_all: types from a type list, or pairs of types from two lists,
+              all satisfy predicate P
+
+   types_all<P,LT>    -> (P<T>() && ...)   for LT = L<T...>
+   types_all<P,LT,LU> -> (P<T,U>() && ...) for LT = L<L...> LU = L<U...>
+*/
+template <template <typename...> class P, typelist L, typelist... R>
+  requires ((type_list_size_v<L> == type_list_size_v<R>) && ...)
 inline constexpr bool types_all
-         = requires {{types_all<P,T...>}->std::same_as<bool>;};
+        = NOT_DEFINED(types_all<P,L,R...>);
 //
 template <template <typename...> class L, typename...T,
           template <typename...> class P>
@@ -77,6 +94,8 @@ template <template <typename...> class L, typename...T,
           template <typename...> class P>
   requires (sizeof...(T) == sizeof...(U))
 inline constexpr bool types_all<P,L<T...>,R<U...>> = (P<T,U>() && ...);
+
+//static_assert(types_all<std::is_fundamental, int>);
 
 template <typename...E>
 concept move_assignable = (is_move_assignable_v<E> && ...);
@@ -146,7 +165,7 @@ concept tupl_val
 template <typename Tupl>
 concept tupl_tie
       = tuplish<Tupl>
-     && tupl_size<Tupl> != 0
+     && tupl_size_v<Tupl> != 0
      && types_all<is_const_assignable, tupl_t<Tupl>>;
 
 // type_map<M,LT> -> L<M<T>...> for type list LT = L<T...>

@@ -51,14 +51,14 @@ struct supertuplfree : tuplfree<int> {};
 static_assert( tuplish<supertuplfriend> );
 static_assert( tuplish<supertuplfree> );
 
-static_assert( tupl_size<supertuplfree> == 1 );
+static_assert( tupl_size_v<supertuplfree> == 1 );
 
 // type_list test
 
 template <typename...> struct type_list;
 template <typename...> struct type_pack;
 
-static_assert( type_list_size< type_list<char,short,int,long> > == 4 );
+static_assert( type_list_size_v< type_list<char,short,int,long> > == 4 );
 
 static_assert( types_all<std::is_integral, type_list<char,short,int,long> > );
 static_assert( ! types_all<std::is_integral, type_list<char,short,int,void> > );
@@ -115,7 +115,7 @@ static_assert( get<0>(tupl{1}) == 1 );
 // test("tupl void")
 
 using tupl_void = tupl<void>; // you can name the type
-static_assert( type_list_size<tupl_void> == 1 ); // and use it
+static_assert( type_list_size_v<tupl_void> == 1 ); // and use it
 // but can't instantiate it (needs a compile-fail test)
 
 // test tupl_max_arity
@@ -131,7 +131,7 @@ auto max_arity_tupl = make_tupl(max_arity{});
 using max_aritypp_tupl = decltype(make_tupl(max_aritypp{}));
 
 // incomplete tupl type can be used like any generic type list
-static_assert( type_list_size<max_aritypp_tupl> == tupl_max_arity+1);
+static_assert( type_list_size_v<max_aritypp_tupl> == tupl_max_arity+1);
 
 // but you can't instantiate more than the max arity
 static_assert( complete<decltype(max_arity_tupl)> );
@@ -191,22 +191,22 @@ tupl t0{};
 
 void tupl_sizes(tupl<> const& e0 = {})
 {
-  SAME( decltype(tupl_size<tupl<>>), const size_t );
-  static_assert( tupl_size<tupl<>> == 0);
-  static_assert( tupl_size<decltype(e0)> == 0);
-  static_assert( tupl_size<decltype(t0)const&&> == 0);
-  static_assert( tupl_size<decltype(tupl{})> == 0 );
+  SAME( decltype(tupl_size_v<tupl<>>), const size_t );
+  static_assert( tupl_size_v<tupl<>> == 0);
+  static_assert( tupl_size_v<decltype(e0)> == 0);
+  static_assert( tupl_size_v<decltype(t0)const&&> == 0);
+  static_assert( tupl_size_v<decltype(tupl{})> == 0 );
 
   tupl s1{1};
   tupl s2{1,2};
   tupl sx{1,2,3,4,5,6,7,8,9,0,1,2,3,4,5,6};
 
-  static_assert( tupl_size<decltype(sx)> == 16 );
-  static_assert( tupl_size<decltype(s1)> + tupl_size<decltype(s2)> == 3 );
+  static_assert( tupl_size_v<decltype(sx)> == 16 );
+  static_assert( tupl_size_v<decltype(s1)> + tupl_size_v<decltype(s2)> == 3 );
 
-  static_assert( tupl_size<tupl<char[1024], char>> == 2 );
+  static_assert( tupl_size_v<tupl<char[1024], char>> == 2 );
 
-  static_assert( tupl_size<tuplintchar> == 2 );
+  static_assert( tupl_size_v<tuplintchar> == 2 );
 };
 
 SAME( tupl_move_t<void>, void );
@@ -741,10 +741,10 @@ void tupl_cats()
   constexpr auto ci0 = cat(ci12,c0);
   constexpr auto cici = cat(ci12,ce,ci12);
 
-  static_assert(tupl_size<decltype(ce)> == 0);
-  static_assert(tupl_size<decltype(ci)> == 1);
-  static_assert(tupl_size<decltype(ci0)> == 1);
-  static_assert(tupl_size<decltype(cici)> == 2);
+  static_assert(tupl_size_v<decltype(ce)> == 0);
+  static_assert(tupl_size_v<decltype(ci)> == 1);
+  static_assert(tupl_size_v<decltype(ci0)> == 1);
+  static_assert(tupl_size_v<decltype(cici)> == 2);
 
   // copy initialize tupl from array lvalue, using cat
   constexpr auto t12 = cat<tupl>(ties{i12});

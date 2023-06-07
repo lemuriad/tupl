@@ -20,7 +20,7 @@ consteval bool ntbs(A const& a) {
 }
 
 template <lml::tupl s>
-  requires (lml::tupl_size<decltype(s)> == 1
+  requires (lml::tupl_size_v<decltype(s)> == 1
             && lml::c_array<decltype(s.x0),char>
             && ntbs(s.x0))
 struct tstring : decltype(s) {
