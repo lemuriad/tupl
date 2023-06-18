@@ -1,8 +1,8 @@
 [wrap-git]
 directory = IREPEAT
-url = https://github.com/willwray/IREPEAT
-revision = master
+url = https://github.com/lemuriad/IREPEAT
+revision = v0.6
 depth = 1
 
 [provide]
-IREPEAT = IREPEAT_dep
+irepeat = irepeat_dep

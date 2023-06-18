@@ -523,12 +523,12 @@ The `#include` dependencies are best seen in a diagram.
     tupl.hpp ---> tupl_platform.hpp
     end
     subgraph c_array_support
-    tupl.hpp -...-> array_compare.hpp
-    tupl_traits.hpp -..-> array_assign.hpp
-    array_compare.hpp --> std["#lt;compare#gt;"]
-    array_compare.hpp --> c_array_support.hpp
-    array_assign.hpp --> c_array_support.hpp
-    array_assign.hpp --> con["#lt;concepts#gt;"]
+    tupl.hpp -...-> c_array_compare.hpp
+    tupl_traits.hpp -..-> c_array_assign.hpp
+    c_array_compare.hpp --> std["#lt;compare#gt;"]
+    c_array_compare.hpp --> c_array_support.hpp
+    c_array_assign.hpp --> c_array_support.hpp
+    c_array_assign.hpp --> con["#lt;concepts#gt;"]
     c_array_support.hpp --> util_traits.hpp
     c_array_support.hpp --> ALLOW_ZERO_SIZE_ARRAY.hpp
     util_traits.hpp --> type_traitsstd["#lt;type_traits#gt;"]

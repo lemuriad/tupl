@@ -49,9 +49,9 @@ sed -n '/^#include \"namespace.hpp\"/,//p' ../subprojects/c_array_support/util_t
 
 sed -n '/^#include \"namespace.hpp\"/,//p' ../subprojects/c_array_support/c_array_support.hpp | sed '/^#include/d' >> tupl_amalgam.hpp
 
-sed -n '/^#include \"namespace.hpp\"/,//p' ../subprojects/c_array_support/array_compare.hpp | sed '1d;$d' >> tupl_amalgam.hpp
+sed -n '/^#include \"namespace.hpp\"/,//p' ../subprojects/c_array_support/c_array_compare.hpp | sed '1d;$d' >> tupl_amalgam.hpp
 
-sed -n '/^#include \"namespace.hpp\"/,//p' ../subprojects/c_array_support/array_assign.hpp | sed '1d;$d' >> tupl_amalgam.hpp
+sed -n '/^#include \"namespace.hpp\"/,//p' ../subprojects/c_array_support/c_array_assign.hpp | sed '1d;$d' >> tupl_amalgam.hpp
 
 sed -n '/^#include \"namespace.hpp\"/,//p' ../tupl/tupl_traits.hpp | sed '1d;$d' >> tupl_amalgam.hpp
 

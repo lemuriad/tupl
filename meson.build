@@ -12,12 +12,12 @@ namespace_id = get_option('namespace_id') # default is namespace lml
 
 c_array_support_dep = dependency('c_array_support')
 
-IREPEAT_dep = dependency('IREPEAT', required : codegen.allowed())
+irepeat_dep = dependency('irepeat', required : codegen.allowed())
 
 subdir('tupl_impl')
 
 tupl_dep = declare_dependency(
-  dependencies : [c_array_support_dep, IREPEAT_dep, tupl_impl_dep],
+  dependencies : [c_array_support_dep, irepeat_dep, tupl_impl_dep],
   include_directories : include_directories('.')
 )
 

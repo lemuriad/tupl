@@ -16,7 +16,7 @@
   Preprocessing proceeds in three passes, TUPL_PASS symbol = empty,1,2.
 
   The resulting output tupl_impl.hpp implementation header depends on a
-  prior #include "array_compare.hpp" - see tupl.hpp for setup required;
+  prior #include "c_array_compare.hpp" - see tupl.hpp for setup required;
   symbols UNREACHABLE and NUA remain in the preprocessed output, for
   platform-specific handling of unreachable(), no_unique_address, etc.
 */

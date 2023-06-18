@@ -33,8 +33,8 @@
   Depends on IREPEAT preprocessor library for repetitive codegen
              (an optional dependency, only needed to do codegen).
 */
-#include "tupl_traits.hpp"   // #includes "array_assign.hpp", required
-#include <array_compare.hpp> // C array comparison support is required
+#include "tupl_traits.hpp"   // #includes "c_array_assign.hpp", required
+#include <c_array_compare.hpp> // C array comparison support is required
 
 #include "namespace.hpp"
 
