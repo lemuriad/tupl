@@ -3,7 +3,6 @@ directory = snitch
 url = https://github.com/cschreib/snitch.git
 revision = main
 depth = 1
-#diff_files = snitch_meson_build.patch
 
 [provide]
 snitch = snitch_dep

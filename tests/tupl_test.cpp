@@ -1,5 +1,5 @@
 #include <tupl/tupl.hpp>
-#include <tupl/tupl_cat.hpp>
+#include <cassert>
 
 void ff() {
 constexpr auto mps = lml::tupl_mptrs<lml::tupl<int,bool>>;
@@ -35,44 +35,56 @@ struct tstring : decltype(s) {
 lml::tupl t0;
 static_assert( std::same_as<decltype(t0),lml::tupl<>> );
 
-auto tupl_API(lml::tupl<int,unsigned,char[2]> tup={})
+constexpr lml::tupl t012 = {0,1U,"2"};
+
+auto tupl_API(lml::tupl<int,unsigned,char[2]> t = t012)
 {
-  bool z = equals(tup, {}); // tup == decltype(tup){}
+  auto s{t}; // Copy construct, as struct aggregate
+  assert(s == t); // Only same types are comparable
 
-  auto dup = tup;  // copy (builtin)
-  dup = {};        // clear by 'aggregate assign' ={}
-  if (tup != dup)  // only same types can be compared
-    swap(dup,tup); // swap elements (specialized)
+  s = t; // Copy-assign, aggregate struct builtin
+  swap(s,t); // Specialized elementwise lml::swap
 
-  auto& [i,u,c2] = dup; // structured binding access
-// tupl c{i,u,c2}; // FAIL: init from array lvalue
-// auto c = lml::tupl_init(i,u,c2); // maker function
+  t = {}; // Clear by builtin 'aggregate assignment'
+  assert(equals(t,{})); // t == {} syntax is illegal
 
-  tup.x0 = {i}; // direct access by known member id
-  get<1>(tup) = {u}; // usual indexed get<I> access
-// get<2>(tup) = {c2}; // FAIL: can't assign arrays
-  lml::assign(get<2>(tup)) = {c2}; // array assign
-// getie<2>(tup) = {c2}; // assign array (see later)
+  t = {1,2,"3"}; // builtin 'aggregate assignment'
 
-  dup = {1,2,"3"}; // non-narrowing conversions only
-// tup = {1,2,c2}; //  FAIL: can't init array lvalue
-  assign(tup) = {i,u,c2}; // handles array lvalues
-  assign_elements(tup,u,i,c2); // allows conversions
-                  //  ^ ^ -> no warning on narrowing
+  auto& [i,u,c2] = t; // Structured binding access
+                      // by builtin aggregate rule
 
-  using lml::flat_index; // 1st array elem, or arg&
-  map(dup,[](auto&...a){((flat_index(a)+=3),...);});
-  z = z && (dup <=> lml::tupl{4,5U,"6"} == 0);
+  t = {i,u}; // WARN of missing initializer, and...
+//t = {u,i}; // WARN or FAIL, narrowing conversions
 
- // auto cc = cat(tup,dup); // concatenate tupls
- // z = z && equals(cc, {2,1,"3",4,5,"6"}); // == list
- // z = z && compare3way(tup,cc) < 0; // lexicographic
-  // Note: comparing different length tupls is okay
+//t = {i,u,c2}; // FAIL: array variable initializer
 
-  auto [I,U,C2] = lml::tupl_mptrs<decltype(tup)>;
-  tup.*I = 1;
+  assign(t) = {i,u,c2}; // Handles array variables,
+/*                        (all initializers needed)
+  Note:
+  assign from braced list can only copy-assign from
+  or move-assign from all initializers, not a mix.
 
-  return lml::tupl{dup, z}; // nested tupl return
+  assign_elements allows elementwise move or copy:
+*/
+  assign_elements(t,u,i,c2); // admits conversions;
+                //  ^ ^    no warnings on narrowing
+
+  t.x0 = {1}; // direct access by known member id
+  get<1>(t) = {2}; // usual indexed get<I> access
+//get<2>(t) = {"3"}; // FAIL: can't assign arrays
+
+  lml::assign(get<2>(t)) = {"3"}; // array assign
+/*
+  getie<2>(t) = {"3"}; // From <tupl/tupl_tie.hpp>
+*/
+  using lml::flat_index; //(1st array elem& or arg&)
+
+  // This map adds 3 to each element of tupl t:
+  map(t ,[](auto&...a){((flat_index(a)+=3),...);});
+
+  assert((t == lml::tupl{4,5U,"6"}));
+
+  return lml::tupl{t, true}; // nested tupl return
 }
 
 //static_assert( sizeof(tupl_API()) == 16 ); // GCC = 12
@@ -203,14 +215,21 @@ auto tup_copy_assign(char(&cstr)[4],bool b)
 #include <iostream>
 using std::ostream;
 
-ostream& operator<<(ostream& o ,tuplish auto const& t)
+ostream& operator<<(ostream& out, tuplish auto const& t)
 {
-  char s = '{';
-  auto c = [&]{[[maybe_unused]]static char x= s=',';};
-  return map(as_tupl_t(t), [&](auto&...a) -> auto& {
-    return (o << ... << (o<<s, c(), a)) << '}';
+  return map(as_tupl_t(t), [&out](auto&...a) -> auto&
+  {
+    char sep = '{';
+    auto sep_out = [&]{
+           out << sep;
+           [[maybe_unused]]static auto _(sep = ',');
+         };
+
+    return (out << ... << (sep_out(), a)) << '}';
   });
 }
+
+#include <tupl/tupl_cat.hpp>
 
 void catr()
 {
@@ -231,8 +250,7 @@ int main()
 {
   tupl<std::string> strng = {"v"};
   strng = {"X"};
-  bool tst = stringstd == cmps{+"c++",20};
-  assert(tst);
+  assert((stringstd == cmps{+"c++",20}));
 
   tupl<char[4],int> cppstd; // uninitialized
   cppstd = {"c++",20};     // 'aggregate assignment'
@@ -248,6 +266,7 @@ int main()
   auto cppxx = assign(tupl<char[4],int>{}) = {cpp,std};
   auto cppyy = lml::tupl_init(cpp,std);
   assert( cppxx == cppyy );
+  cppxx = cppyy;
 
   vals<char[4],int> cppval; // uninitialized
   cppval = {cpp, std};      // two-phase init
@@ -256,6 +275,7 @@ int main()
   // two-phase init one-liner
   auto cppass = vals<char[4],int>{} = {cpp,std};
   assert( cppass == cppxx );
+  cppass = cppxx;
 
 //  assign(cstd) = {{},20};
 //  assign(cstd) = {cmm,20};

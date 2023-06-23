@@ -1,7 +1,7 @@
 test('sanity'
     ,executable('tupl_sanity_test'
                ,'tupl_sanity_test.cpp'
-               ,cpp_args : ['-DNAMESPACE_ID=lml']
+               ,override_options: ['b_ndebug=false']
                ,dependencies: [tupl_dep]
                )
 )
@@ -10,7 +10,7 @@ if codegen.enabled()
 test('amalgam'
     ,executable('tupl_amalgam_test'
                ,'tupl_amalgam_test.cpp'
-               ,cpp_args : ['-DNAMESPACE_ID=lml']
+               ,override_options: ['b_ndebug=false']
                ,dependencies: [tupl_dep, tupl_amalgam_dep]
                )
 )
@@ -20,8 +20,8 @@ if codegen.allowed()
 test('tupl_impl'
     ,executable('tupl_impl'
                ,'tupl_test.cpp'
-               ,cpp_args : ['-DTUPL_IMPL_PREPROCESS'
-                           ,'-DNAMESPACE_ID=lml']
+               ,cpp_args: ['-DTUPL_IMPL_PREPROCESS']
+               ,override_options: ['b_ndebug=false']
                ,dependencies: [tupl_dep]
                ,include_directories: tupl_impl_dir
                )
@@ -31,7 +31,8 @@ endif
 test('tupl'
     ,executable('tests'
                ,'test.cpp'
-               ,cpp_args : ['-DNAMESPACE_ID=']
+               ,cpp_args: ['-DNAMESPACE_ID=']
+               ,override_options: ['b_ndebug=false']
                ,dependencies: [tupl_dep, snitch_dep]
                )
 )

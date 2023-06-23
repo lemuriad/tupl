@@ -684,6 +684,8 @@ void tupl_swap()
   assert( ta == tA && tb == tB ); // unswapped
 
   auto maptie = map(ta,[](auto&...a){return tie(a...);});
+  assert( &get<0>(maptie) == &get<0>(ta) );
+  maptie = ta;
 
   auto& [a0,a1,a2] = ta;
   auto& [b0,b1,b2] = tb;
@@ -715,6 +717,8 @@ void tupl_swap()
 
   tupl noxt = {'\03'};
   assert( equals(noxt, {3}) );
+  noxt = {4};
+  assert( equals(noxt, {'\04'}) );
   tiea = {1,2L,4};
 };
 
