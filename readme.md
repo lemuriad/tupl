@@ -1,8 +1,8 @@
-# `tupl`: trivial tuple types
+# `tupl`: aggregate tuple types
 
 ## Minimal C++20 tuples, traits and tools
 
-<details><summary>Copyright &copy; 2023 Lemurian-Labs.
+<details><summary>Copyright &copy; 2023 The Lemuriad.
 Distributed under BSL V1.0</summary>
 
 ### **Boost Software License** - Version 1.0 - August 17th, 2003
@@ -37,8 +37,8 @@ Also at [boost.org](http://www.boost.org/LICENSE_1_0.txt) and accompanying file 
 
 </details>
 
-[![ci_meson](https://github.com/Lemurian-Labs/tupl/actions/workflows/ci.yml/badge.svg)](https://github.com/Lemurian-Labs/tupl/actions/workflows/ci.yml)
-gcc 12, clang 14, MSVC VS 17.4.4 19.34.31937
+![GitHub Actions Badge](../../actions/workflows/ci.yml/badge.svg)
+GitHub Actions meson build: linux gcc 12, clang 14, windows latest
 
 ----
 
@@ -569,7 +569,7 @@ It has no meson support yet, so CMake is required to set up  build targets.
 ## Build
 
 See the demo project
-[`tupl_play`](https://github.com/Lemurian-Labs/tupl_play)
+[`tupl_play`](https://github.com/Lemuriad/tupl_play)
 for an example client set up, with meson.
 
 A build setup is recommended, even for header-only projects, though no  
@@ -587,7 +587,7 @@ A meson.build setup is provided. CMake is coming.
 * ToDo: Benchmarks and static analysis
 
 ```bash
-  git clone https://github.com/Lemurian-Labs/tupl.git
+  git clone https://github.com/Lemuriad/tupl.git
   cd tupl
   meson setup build
   meson compile -C build

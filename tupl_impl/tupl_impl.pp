@@ -1,11 +1,8 @@
 #ifndef TUPL_PASS
 /*
-     Copyright (c) 2023 Lemurian Labs https://lemurianlabs.com/
-
-     Distributed under the Boost Software License, Version 1.0.
-           http://www.boost.org/LICENSE_1_0.txt
-
-     Repo: https://github.com/Lemurian-Labs/tupl
+ SPDX-FileCopyrightText: 2023 The Lemuriad <opensource@lemurianlabs.com>
+ SPDX-License-Identifier: BSL-1.0
+ Repo: https://github.com/Lemuriad/tupl
 */
 #if 0
      tupl_impl.pp -> tupl_impl.hpp preprocessing stage
