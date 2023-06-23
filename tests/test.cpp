@@ -89,6 +89,7 @@ int[8],int[9],int[10],int[11],int[12],int[13],int[14],void,int[16]>>> );
 #include "snitch/snitch.hpp"
 
 #include <tupl/tupl.hpp>
+#include <tupl/tupl_cat.hpp>
 
 auto ir = fwds{1,1};
 SAME(decltype(ir), fwds<int&&,int&&>);

@@ -1,4 +1,5 @@
 #include <tupl/tupl.hpp>
+#include <tupl/tupl_cat.hpp>
 
 void ff() {
 constexpr auto mps = lml::tupl_mptrs<lml::tupl<int,bool>>;

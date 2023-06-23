@@ -200,7 +200,6 @@ constexpr auto tupl_mptrs<T,I...> = tupl{tupl_mptr<I,T>...};
 
 #include "tupl_impl_assign.hpp"
 #include "tupl_impl_compare.hpp"
-#include "tupl_impl_cat.hpp"
 
 #include "IREPEAT_UNDEF.hpp"
 

@@ -1,4 +1,9 @@
-#include "tupl_impl_int_seq.hpp"
+#include "index_sequences.hpp"
+#include "tupl.hpp"
+
+#include "tupl_platform.hpp"
+
+#include "namespace.hpp"
 
 // ctad_t<X,v> 'CTAD type'; the type that X{v{}} element 0 would have
 //             if X is a tuplish template id with value category CTAD
@@ -10,15 +15,15 @@ using ctad_t = copy_cvref_t<type_list_element_t<0,
 
 namespace impl { // helpers to compute concatenated tupl types
 
-template <tuplish...TL, auto...IJ>
-constexpr auto cat_t(seq_T<IJ_t, IJ...>)
-  -> tupl<type_list_element_t<IJ.j,
-          type_list_element_t<IJ.i, tupl<TL...>>>...>;
+template <tuplish...TL, auto...ij>
+constexpr auto cat_t(val_seq<ij_t, ij...>)
+  -> tupl<type_list_element_t<ij.j,
+          type_list_element_t<ij.i, tupl<TL...>>>...>;
 
-template <template<typename...>class X, tuplish...TL, auto...IJ>
-constexpr auto cat_ctad_t(seq_T<IJ_t, IJ...>)
-  -> X<ctad_t<X,type_list_element_t<IJ.j,
-                type_list_element_t<IJ.i, tupl<TL...>>>>...>;
+template <template<typename...>class X, tuplish...TL, auto...ij>
+constexpr auto cat_ctad_t(val_seq<ij_t, ij...>)
+  -> X<ctad_t<X,type_list_element_t<ij.j,
+                type_list_element_t<ij.i, tupl<TL...>>>>...>;
 
 } // impl
 
@@ -26,14 +31,14 @@ constexpr auto cat_ctad_t(seq_T<IJ_t, IJ...>)
 //
 template <tuplish...TL>
 using cat_t = decltype(impl::cat_t<std::remove_cvref_t<TL>...>
-                                  (kron_seq_t<tupl_size_v<TL>...>{}));
+                                   (ij_seq<tupl_size_v<TL>...>{}));
 
 // cat_ctad_t<X,TL...> -> decltype( X{fwd<E>()...} )
 // concatenation type of forwarded element types as deduced by X's CTAD
 //
 template <template<typename...>class X, tuplish...TL>
 using cat_ctad_t = decltype(impl::cat_ctad_t<X,tupl_fwd_t<TL>...>
-                                  (kron_seq_t<tupl_size_v<TL>...>{}));
+                                      (ij_seq<tupl_size_v<TL>...>{}));
 
 /*
   tupl_init; tupl aggregate initialization function overloads
@@ -57,14 +62,14 @@ constexpr auto tupl_init(auto&&...v)
 
   else // expand array elements in brace-elided aggregate initializers
 
-    return [&]<auto...IJ>(seq_T<IJ_t, IJ...>)
+    return [&]<auto...ij>(val_seq<ij_t, ij...>)
             noexcept((is_nothrow_constructible_v<T,decltype(v)> && ...))
           -> X<T...>
     {
       NO_WARN_MISSING_BRACES(
-      return {flat_index(get<IJ.i>(fwds{(decltype(v))v...}),IJ.j)...};
+      return {flat_index(get<ij.i>(fwds{(decltype(v))v...}),ij.j)...};
       )
-    }(kron_seq_t<flat_size<std::remove_cvref_t<T>>...>{});
+    }(ij_seq<flat_size<std::remove_cvref_t<T>>...>{});
 }
 /*
   tupl_init(v...) -> tupl{v...};  with tupl CTAD
@@ -88,15 +93,15 @@ constexpr auto cat(TL&&...tl) noexcept(
  -> cat_t<tupl_t<TL>...>
  requires(std::is_constructible_v<std::remove_cvref_t<TL>,TL&&> && ...)
 {
-  return [&]<auto...IJ>(seq_T<IJ_t,IJ...>) noexcept(
+  return [&]<auto...ij>(val_seq<ij_t,ij...>) noexcept(
  (std::is_nothrow_constructible_v<std::remove_cvref_t<TL>,TL&&> && ...))
  -> cat_t<tupl_t<TL>...>
   {
-    return tupl_init<tupl,type_list_element_t<IJ.j, std::remove_cvref_t<
-                          type_list_element_t<IJ.i, tupl<TL...>>>>...>
-                         (get<IJ.j>(get<IJ.i>(fwds{(TL&&)tl...}))...);
+    return tupl_init<tupl,type_list_element_t<ij.j, std::remove_cvref_t<
+                          type_list_element_t<ij.i, tupl<TL...>>>>...>
+                         (get<ij.j>(get<ij.i>(fwds{(TL&&)tl...}))...);
   }
-  (kron_seq_t<tupl_size_v<TL>...>{});
+  (ij_seq<tupl_size_v<TL>...>{});
 }
 
 // cat<X>(t...) concatenate tuplish t's to X{v...} using X's CTAD
@@ -109,12 +114,16 @@ constexpr auto cat(TL&&...tl) noexcept(
  requires (std::is_constructible_v<cat_ctad_t<X,TL&&>,
                 apply_cvref_t<TL&&,cat_ctad_t<X,TL&&>>> && ...)
 {
-  return [&]<auto...IJ>(seq_T<IJ_t,IJ...>) noexcept(
+  return [&]<auto...ij>(val_seq<ij_t,ij...>) noexcept(
      (std::is_nothrow_constructible_v<cat_ctad_t<X,TL&&>,
                    apply_cvref_t<TL&&,cat_ctad_t<X,TL&&>>> && ...))
     -> cat_ctad_t<X,TL&&...>
   {
-    return tupl_init<X>(get<IJ.j>(get<IJ.i>(fwds{(TL&&)tl...}))...);
+    return tupl_init<X>(get<ij.j>(get<ij.i>(fwds{(TL&&)tl...}))...);
   }
-  (kron_seq_t<tupl_size_v<TL>...>{});
+  (ij_seq<tupl_size_v<TL>...>{});
 }
+
+#include "namespace.hpp"
+
+#include "tupl_platform.hpp"

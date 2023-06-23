@@ -40,27 +40,7 @@ static_assert(false,"[[no_unique_address]] attribute is required");
 #endif
 
 // INT_SEQ_MAP & SEQ_MAP wrap integer-sequence generator builtins
-//
-#if defined(__clang__)
-
-#define INT_SEQ_MAP(...)\
-template<auto f>struct int_seq_map{template<class,int...I>__VA_ARGS__;};
-#define SEQ_MAP()__make_integer_seq<int_seq_map<f>::template type,int,N>
-
-#elif defined(__GNUG__)
-
-#define INT_SEQ_MAP(...)\
-namespace int_seq_map{template<auto f,int...I>__VA_ARGS__;}
-#define SEQ_MAP()int_seq_map::type<f,__integer_pack(N)...>
-
-#elif defined(_MSC_VER)
-
-#define INT_SEQ_MAP(...)template<auto f>struct int_seq_map{\
-template<class,int...I>struct ty{__VA_ARGS__;};};
-#define SEQ_MAP()\
-typename __make_integer_seq<int_seq_map<f>::template ty,int,N>::type;
-
-#endif
+// moved to index_sequences.hpp
 
 // type_pack_element_t; Clang has a builtin, use it if available
 //
@@ -88,8 +68,7 @@ _Pragma("GCC diagnostic pop")
 
 #undef NO_WARN_MISSING_BRACES
 #undef TYPEPACKEL
-#undef SEQ_MAP
-#undef INT_SEQ_MAP
+
 #undef NUA
 #undef UNREACHABLE
 

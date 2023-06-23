@@ -320,4 +320,6 @@ template <typename U> using tupl_view_t = impl::tview_t<U>;
 
 #include "namespace.hpp"
 
+#include "tupl_platform.hpp"
+
 #endif

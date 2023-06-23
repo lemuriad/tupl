@@ -34,6 +34,8 @@
 #include "tupl_traits.hpp"   // #includes "c_array_assign.hpp", required
 #include <c_array_compare.hpp> // C array comparison support is required
 
+#include "tupl_platform.hpp"
+
 #include "namespace.hpp"
 
 // If tupl_impl/tupl_impl.hpp exists then is included instead.
