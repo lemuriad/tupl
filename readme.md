@@ -37,11 +37,20 @@ Also at [boost.org](http://www.boost.org/LICENSE_1_0.txt) and accompanying file 
 
 </details>
 
-![GitHub Actions Badge](../../actions/workflows/ci.yml/badge.svg)
-GHA meson build: linux gcc 12, clang 14, MSVC latest
+<table style="width: 100%; border: none;" cellspacing="0" cellpadding="0" border="0">
+  <tr>
+    <td><img alt="GitHub Actions Badge" src="../../actions/workflows/ci.yml/badge.svg"></td>
+    <td>GHA meson build: linux gcc 12, clang 14, MSVC latest</td>
+  </tr>
+</table>
 
-<a href=https://godbolt.org/z/85Tex45c1><img src=godbolt-ar21.svg width=52 style="vertical-align:middle"></a>
-Online compiler link. Please play with `tupl` and report any issues.
+<table style="width: 100%; border: none;" cellspacing="0" cellpadding="0" border="0">
+  <tr>
+    <td><img alt="godbolt-ar21" src="https://github.com/lemuriad/tupl/assets/3172718/e17b7c56-a1da-4659-9e7b-bc7d0f2d96a2"></td>
+    <td>Please experiment with <code>tupl</code> and report any issues;<br>
+        $\Leftarrow$ follow this link to 'godbolt' online C++ compilers.</td>
+  </tr>
+</table>
 
 ----
 
@@ -345,10 +354,6 @@ To mix move and copy assignments, assign from a forwarding tupl:
 
 ```c++
   lml::tie(cp,mv) = tie_fwd(cc, std::move(mm));
-
-  // Equivalents:
-  lml::tie(cp,mv) = lml::fwds{cc, std::move(mm)};
-  assign_elements(lml::tie(cp,mv), cc, std::move(mm)};
 ```
 
 ### Other `tuplish`
