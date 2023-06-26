@@ -66,8 +66,7 @@ auto tupl_API(lml::tupl<int,unsigned,char[2]> t = t012)
 
   assign_elements allows elementwise move or copy:
 */
-  assign_elements(t,u,i,c2); // admits conversions;
-                //  ^ ^    no warnings on narrowing
+  assign_elements(t,u,i,c2);
 
   t.x0 = {1}; // direct access by known member id
   get<1>(t) = {2}; // usual indexed get<I> access

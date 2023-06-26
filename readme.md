@@ -38,10 +38,10 @@ Also at [boost.org](http://www.boost.org/LICENSE_1_0.txt) and accompanying file 
 </details>
 
 ![GitHub Actions Badge](../../actions/workflows/ci.yml/badge.svg)
-GitHub Actions meson build: linux gcc 12, clang 14, MSVC latest
+GHA meson build: linux gcc 12, clang 14, MSVC latest
 
-Compiler Explorer link with amalgamated header
-<a href=https://godbolt.org/z/333GYoo4s><img src=tupl_impl/CE.png width=52 style="vertical-align:middle"></a>
+<a href=https://godbolt.org/z/85Tex45c1><img src=godbolt-ar21.svg width=52 style="vertical-align:middle"></a>
+Online compiler link. Please play with `tupl` and report any issues.
 
 ----
 
@@ -171,8 +171,7 @@ auto tupl_API(lml::tupl<int,unsigned,char[2]> t = t012)
 
   assign_elements allows elementwise move or copy:
 */
-  assign_elements(t,u,i,c2); // Admits conversions;
-                //  ^ ^    no warnings on narrowing
+  assign_elements(t,i,u,c2);
 
   t.x0 = {1}; // Direct access by known member id
   get<1>(t) = {2}; // Usual indexed get<I> access
