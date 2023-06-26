@@ -39,16 +39,16 @@ Also at [boost.org](http://www.boost.org/LICENSE_1_0.txt) and accompanying file 
 
 <table style="width: 100%; border: none;" cellspacing="0" cellpadding="0" border="0">
   <tr>
-    <td><img alt="GitHub Actions Badge" src="../../actions/workflows/ci.yml/badge.svg"></td>
+    <td><a href="https://github.com/Lemurian-Labs/tupl/actions/workflows/ci.yml"><img alt="GitHub Actions Badge" src="../../actions/workflows/ci.yml/badge.svg"></a></td>
     <td>GHA meson build: linux gcc 12, clang 14, MSVC latest</td>
   </tr>
 </table>
 
 <table style="width: 100%; border: none;" cellspacing="0" cellpadding="0" border="0">
   <tr>
-    <td><img alt="godbolt-ar21" src="https://github.com/lemuriad/tupl/assets/3172718/e17b7c56-a1da-4659-9e7b-bc7d0f2d96a2"></td>
-    <td>Please experiment with <code>tupl</code> and report any issues;<br>
-        $\Leftarrow$ follow this link to 'godbolt' online C++ compilers.</td>
+    <td><a href=https://godbolt.org/z/85Tex45c1><img alt="godbolt-ar21" src="https://github.com/lemuriad/tupl/assets/3172718/e17b7c56-a1da-4659-9e7b-bc7d0f2d96a2"></a></td>
+    <td>Please experiment with <code>tupl</code> and report any issues<br>
+        $\Leftarrow$ follow this link to 'godbolt' online C++ compilers</td>
   </tr>
 </table>
 
