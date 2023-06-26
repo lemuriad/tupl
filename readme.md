@@ -38,22 +38,26 @@ Also at [boost.org](http://www.boost.org/LICENSE_1_0.txt) and accompanying file 
 </details>
 
 ![GitHub Actions Badge](../../actions/workflows/ci.yml/badge.svg)
-GitHub Actions meson build: linux gcc 12, clang 14, windows latest
+GitHub Actions meson build: linux gcc 12, clang 14, MSVC latest
+
+Compiler Explorer link with amalgamated header
+<a href=https://godbolt.org/z/333GYoo4s><img src=tupl_impl/CE.png width=52 style="vertical-align:middle"></a>
 
 ----
+
+## Contents
 
 * [`tupl`](#tupl-introduction) introduction
 and [API](#tupl-api-by-example) examples
 * [`ties`](#ties-introduction) introduction
 and [API](#ties-api-by-example) examples
 * [Comparisons](#comparisons), `cmps`, 3-way and equals
-* [Headers](#headers) and $\rightarrow$ **CE playground** $\leftarrow$
-* [Triviality, Layout](#triviality-and-layout) and [Member ids](#member-ids)
-* [Dependencies](#dependencies) and [Build](#build)
-* [Appendix](readmore.md#appendices)  
+* [Aggregate properties](#aggregate-properties), [Layout](#layout) and [Member ids](#member-ids)
+* [Headers](#headers), [Dependencies](#dependencies) and [Build](#build)
+* [Appendices](readmore.md#appendices):
 [Initialization](readmore.md#initialization) and
  [Assignments](readmore.md#assignments)  
- [`tupl` design](#tupl-design-notes) (some `std::tuple` comparison)
+ [`tupl` design](#tupl-design-notes) and `std::tuple` comparison
 
 ## `tupl` introduction
 
@@ -63,114 +67,158 @@ https://en.wikipedia.org/wiki/High-level_programming_language#Abstraction_penalt
 
 Imagine if C++ had tuples built in to the language...
 
-* **`tupl<E...>`** $\rightarrow$ `struct { E ...x; };`  
-  * A struct aggregate with  member types `E...`
+* **`tupl<E...>`** $\rightarrow$ `struct { E ...x; };`
 
-`tupl` has no non-static member functions -
-a true 'Rule of Zero' type.  
+That is, `tupl` is simply a struct aggregate with  member types `E...`
+
 As an aggregate,
 the properties of its elements propagate up to `tupl`:
 
-* If `E...` are all trivial / structural / regular types  
+* If `E...` are all
+[trivial](https://en.cppreference.com/w/cpp/named_req/TrivialType) /
+[structural](https://eel.is/c++draft/temp.param#def:type,structural) /
+[regular](https://en.cppreference.com/w/cpp/concepts/regular) types  
 then `tupl<E...>` is a trivial / structural / regular type.
 
 In particular, a `tupl` is
-[TriviallyCopyable](https://en.cppreference.com/w/cpp/named_req/TriviallyCopyable)
+[*TriviallyCopyable*](https://en.cppreference.com/w/cpp/named_req/TriviallyCopyable)
 if all its elements are.  
 Trivial types are cheap to pass to and return from functions and enable  
 compilers to inline deeper, realising more optimization opportunities.
 
+`tupl` has *no non-static member functions*.
+A true 'Rule of Zero' type,  
+it relys on builtin langauge mechanics for much of its 'API'.
+
 ### Aggregate nature
 
-`tupl` embraces curly braces! Its builtin API encourages their use.  
-Class template argument deduction works nicely with braces
-{[CTAD](https://en.cppreference.com/w/cpp/language/class_template_argument_deduction)}.  
+`tupl` embraces curly braces! Its builtin 'API' encourages their use.
+
 Braces protect against narrowing conversions in aggregate initialization  
-and so also in 'aggregate assignment' from a braced initializer-list:
+and so also in 'aggregate assignment' from a braced initializer-list.  
+Class template argument deduction works nicely with braces
+{[CTAD](https://en.cppreference.com/w/cpp/language/class_template_argument_deduction)}:
 
 ```c++
   tupl cppstd = {"c++",17}; // CTAD + aggregate init
   if (cppstd < tupl{"c++",20}) // same-types compare
-     cppstd = {"c++",20}; // 'aggregate assignment'
+     cppstd = {"c++",23}; // 'aggregate assignment'
   cppstd = {"c++"}; // ok?
              // ^  warning: missing int init value
 ```
 
-In C++20, aggregates can be initialized with parentheses, `tupl(d,k)`,  
-'constructor syntax' so they can be made like other types in generic code.  
-Prefer curlies otherwise; parens admit narrowing conversions and decay.
+In C++20, aggregates can also be initialized with parentheses, `tupl(d,k)`.  
+This 'constructor syntax' is useful constructing objects of any, generic, type,  
+but the parens admit narrowing conversions and argument decay.
+
+$\Rightarrow$ *Prefer curlies* !
 
 `tupl` embraces C arrays and regularizes them;
-arrays aren't
-[regular](https://en.cppreference.com/w/cpp/concepts/regular) but  
-tupl-of array is a regular type.
-Aggregates should stick together!
+tupl-of array is a regular type  
+(`std::tuple`, in contrast, is hostile to C array).
+
+$\Rightarrow$ *Aggregates should stick together* !
 
 ## `tupl` API by example
 
 `tupl` is simple yet sufficient for most tuple use cases.
 
-`tupl` elements are public; they can be accessed directly by member id,  
-by conventional indexed access `get<I>(t)`, or by structured binding.  
-Assignment is builtin. Comparisons are `=default`, or defined the same.
+Understanding `tupl`'s API starts with understanding C++ language rules  
+around aggregate types, their benefits and limitations.
+
+`tupl` elements are all public and can be accessed directly by member id,  
+by structured binding, or by conventional indexed access `get<I>(t)`.  
+
+Assignment is builtin. Comparisons are `=default`, if possible.
 
 ```c++
-#include "tupl.hpp" // aggregate tuple
+#include <tupl/tupl.hpp>
 
-auto tupl_API(lml::tupl<int,unsigned,char[2]> tup={})
+// CTAD deduces <int,unsigned,char[2]> from {0,1U,"2"}
+constexpr lml::tupl t012 = {0,1U,"2"};
+
+auto tupl_API(lml::tupl<int,unsigned,char[2]> t = t012)
 {
-  bool z = equals(tup,{}); // each element e == E{}
-               // tup == decltype(tup){}
+  auto s{t}; // Copy construct, as struct aggregate
 
-  auto& [i,u,c2] = tup; // structured binding access
+  assert(s == t); // Same types are comparable
+  // (Only same types are comparable, unlike tuple)
 
-//tupl c{i,u,c2}; // FAIL: array-valued initializer
-                  // use tupl_init array workaround:
+  s = t; // Copy-assign, aggregate struct builtin
+  // (Only same types are assignable, unlike tuple)
 
-  auto c = lml::tupl_init(i,u,c2); // maker function
+  swap(s,t); // Specialized elementwise lml::swap
 
-  auto dup = tup;  // copy
-  dup = {};        // clear by 'aggregate assign'={}
-  if (tup != dup)  // only same types are comparable
-    swap(dup,tup); // swap elementwise (specialized)
+  t = {}; // Clear by builtin 'aggregate assignment'
+  assert(equals(t,{})); // t == {} syntax is illegal
 
-  tup.x0 = {i}; // direct access by known member id
-  get<1>(tup) = {u}; // usual indexed get<I> access
-//get<2>(tup) = {c2}; // FAIL: can't assign arrays
-  lml::assign(get<2>(tup)) = {c2}; // array assign
-//getie<2>(tup) = {c2}; // assign array (see later)
+  s = {1,2,"3"}; // Builtin 'aggregate assignment'
 
-  dup = {1,2,"3"}; // 'aggregate assignment'
-//tup = {1,2,c2}; // FAIL: array-valued initializer
-  assign(tup) = {i,u,c2}; // handles array values
-  assign_elements(tup,u,i,c2); // allows conversions
-                  //  ^ ^ -> no warning on narrowing
+  auto& [i,u,c2] = s; // Structured binding access
+                      // by builtin aggregate rule
+                     // (not by std 'tuple protcol')
 
-  using lml::flat_index; //(1st array elem, or arg&)
+  t = {i,u}; // WARN of missing initializer, and...
+  t = {u,i}; // WARN or FAIL, narrowing conversions
 
-  // This map adds 3 to each element of dup:
-  map(dup,[](auto&...a){((flat_index(a)+=3),...);});
+//t = {i,u,c2}; // FAIL: array variable initializer
 
-  z = z && (dup <=> lml::tupl{4,5U,"6"} == 0);
+// assign(t) function handles array variables
+  assign(t) = {i,u,c2}; // all initializers needed
+/*
+  Note: assign from braced list can only copy-assign
+  or move-assign from _all_ initializers, not a mix.
 
-  auto dub = cat(tup,dup); // concatenate tupls
+  assign_elements allows elementwise move or copy:
+*/
+  assign_elements(t,u,i,c2); // Admits conversions;
+                //  ^ ^    no warnings on narrowing
 
-  z = z && equals(dub, {2,1,"3",4,5,"6"}); // == list
-  z = z && compare3way(tup,dub) < 0; // lexicographic
-  // Note: different length tupl compare3way works
+  t.x0 = {1}; // Direct access by known member id
+  get<1>(t) = {2}; // Usual indexed get<I> access
+//get<2>(t) = {"3"}; // FAIL: can't assign arrays
 
-  return lml::tupl{dup, z}; // nested tupl return
+  lml::assign(get<2>(t)) = {"3"}; // array assign
+/*
+  getie<2>(t) = {"3"}; // From <tupl/tupl_tie.hpp>
+*/
+  using lml::flat_index; //(1st array elem& or arg&)
+
+  // This map adds 3 to each element of tupl t:
+  map(t ,[](auto&...a){((flat_index(a)+=3),...);});
+
+  assert((t == lml::tupl{4,5U,"6"}));
+
+  return lml::tupl{t, true}; // Nested tupl return
+      // tupl< tupl<int, unsigned, char[2]>, bool >
 }
 ```
 
-> **Note**: GCC and Clang disagree on [layout](#triviality-and-layout)
-and `sizeof` the return type.  
-For portable standard layout, use sibling type `lupl` instead of `tupl`.
+> **Note**: Compilers disagree on the layoutand `sizeof` the return type.  
+> For portable standard layout use 'layout tuple' `lupl` instead of `tupl`  
+> see the section on [layout](#layout) below.
 
-The hidden friend function `map` helps iterate `tupl` elements as a pack;  
-`map(t,f)` calls functor `f` with tupl `t`'s elements as arguments.
+### `tupl` `map`
 
-Here's another example of `map` usage; a `tupl` stream printer:
+`map` is a helper function for iterating `tupl` elements as a variadic pack.  
+It's intended as a generic access facility for implementing other accessors  
+such as `for_each` functions.
+
+`map` is a
+[hidden friend function](https://www.justsoftwaresolutions.co.uk/cplusplus/hidden-friends.html)
+defined within `tupl` classes.
+
+As such, `map` is  hidden from ordinary name lookup and can only be found  
+by [ADL](https://en.cppreference.com/w/cpp/language/adl),
+argument dependent lookup, when passed a `tupl` argument.
+
+`map(t,f)` calls functor `f` with tupl `t`'s elements `x...` as arguments:
+
+`map(t,f) -> f(x...)`
+
+The functor `f` will usually accept `x...` as a variadic argument pack.
+
+As an example of `map` usage, here's a `tupl` stream printer:
 
 ```c++
 #include <iostream>
@@ -183,14 +231,17 @@ extern auto tupl_API(); // from the snippet above
 
 /* tupl stream print operator<<, a 'map' usage demo */
 
-ostream& operator<<(ostream& o, tuplish auto const& t)
+ostream& operator<<(ostream& out, tuplish auto const& t)
 {
-  char s = '{'; // separator char open '{' then ','
-                // via 'call-once' static init
-  auto c = [&]{[[maybe_unused]]static char x= s=',';};
+  return map(as_tupl_t(t), [&out](auto&...a) -> auto&
+  {
+    char sep = '{';
+    auto sep_out = [&]{ // output '{' on first call
+           out << sep; // output ',' on following calls
+           [[maybe_unused]]static auto _(sep = ',');
+         };
 
-  return map(as_tupl_t(t), [&](auto&...a) -> auto& {
-    return (o << ... << (o<<s, c(), a)) << '}';
+    return (out << ... << (sep_out(), a)) << '}';
   });
 }
 
@@ -201,36 +252,30 @@ int main()
 // Outputs nested tupl return value: {{4,5,6},true}.
 ```
 
-The `tuplish` concept requires a member typedef `tupl_t` with a `map`,  
-then `as_tupl_t(t)` casts to the embedded type prior to calling `map`.  
-
-### `tupl` operands are same-type only
-
-`std::tuple` can assign-from any tuple of assignable-from types and it  
-can compare-with any tuple of comparable-with types.
-
-`tupl` itself does not provide 'heterogeneous' or 'polymorphic' operators.  
-`tupl`'s builtin assignment and default comparisons naturally only work  
-for operands of the same type.
-
-This is a safe default.
-For heterogeneous or converting operations use free  
-functions `assign`, `assign_elements`, `equals` and `compare3way`.  
-Or use a derived `tuplish` type that adds only the desired operators.
-
 ### `tuplish` types
 
-`tupl` is intended by design to be used as a base class to hold all the data  
-members of classes that want tuple access and free conversion to `tupl`.  
-Deriving from `tupl` automatically makes the derived type `tuplish`.
+The `tuplish` concept requires a member typedef `tupl_t` on which a  
+`map` function is defined. Prior to calling `map`, the `as_tupl_t(t)` cast  
+assures that the embedded type is used for lookup.
 
-`tupl` itself is meant for tuples of values;
-it's CTAD guide deduces values.  
-Element types are unconstrained though; they may be lvalue reference,  
-rvalue reference, const or even function reference type.
+`tupl` is intended by design to be used as a base class for other tuplish  
+types that extend its API by adding constructors or member functions  
+(but not member data; the `tupl` base should hold all data members).
 
-In particular, it's useful to deal with reference members in their own type;  
-meet `ties`...
+Deriving from `tupl` automatically makes the derived type `tuplish`,  
+gaining tuple access for free.
+
+`tupl` is primarily a value type, i.e. it is meant to hold values.  
+The `tupl` CTAD guide deduces element types by-value.
+
+As a generic base, though, `tupl` element types are unconstrained so it  
+may hold lvalue references, rvalue references or even function references.
+
+Besides `tupl` and `lupl`, the library provides three derived `tuplish` types;
+
+* `ties`, `cmps` and `vals`
+
+`ties` is specialized for tuples of references.
 
 ## `ties` introduction
 
@@ -240,87 +285,89 @@ meet `ties`...
 
 `ties` remains trivially copyable while providing extra tuple assignments.  
 
-The intended use case is reference-tuples, for assignment or comparison  
-of multiple variables.
-Structured bindings replace some use cases; not all.
+The intended use case is reference-tuples, which are used for assignment  
+of multiple variables or for lexicographic comparison of tuples of variables.
 
-`tie` and `tie_fwd` functions return const-qualified `ties` tupls  
-(the const qualifier disables the deleted default assignments):
+Structured bindings, introduced in C++17, replace some use cases of `ties`,  
+but not all.
+Default synthesized comparison operators, introduced in C++20,  
+help with lexicographic comparison but `ties` cover cases not covered by the  
+standard - comparison of reference members in particular.
+
+`tie` or `tie_fwd` 'maker functions' are the preferred way to make `ties`,  
+returning const-qualified `ties` tupls:
 
 * `tie(x...)` $\rightarrow$ `ties<decltype(x)&...> const`
 * `tie_fwd(x...)` $\rightarrow$ `ties<decltype(x)...> const`
 
-`tie` or `tie_fwd` 'maker functions' are the preferred way to make `ties`  
-(`ties` CTAD deduces forwarding references, but can't const-qualify).
-
 `tie` accepts only lvalues and deduces lvalues as targets for assignments.  
-`tie_fwd` forwards all its arguments, like `std::forward_as_tuple`.
+`tie_fwd` forwards its `auto&&` arguments, like `std::forward_as_tuple`.
+
+**Why `const`?**:  
+The const qualifier removes the deleted default assignment operators from  
+consideration. The resulting const-qualified type satisfies *const-assignable*  
+concept, identifying it as an 'assign-through' reference type.
 
 ## `ties` API by example
 
 ```c++
 #include "tupl_tie.hpp"  // ties operator= overloads
-#include "tupl_cmps.hpp" // cmps operator== and <=>
 
 bool tie_API(int i, unsigned u, char(&c2)[2])
 {
   if (equals(lml::tie(i,u,c2), {})) // all elem==T{}
     lml::tie(i,u,c2) = {1,2,"3"}; // assign-through
 
-  // or use operator== and a cmps tupl to compare
-  z = lml::tie(i,u,c2) == lml::cmps{0,0U,"\0"};
-  z = lml::tie(i,u,c2) == lml::cmps{{}}; // all=={}
-
   lml::tie(i,u,c2) = {}; // clear all to = {} init
   lml::tie(c2) = {{'4'}}; // assign from array rvalue
+  char five[] = "5";
+  lml::tie(c2) = {five}; // assign from array lvalue
 
-  lml::ties refs = {i,u,c2}; // ties CTAD->references
-//refs = {i,u,c2}; // ambiguous overload (non const)
-  using as_const = decltype(refs) const&;
-  (as_const)refs = {i,u,c2}; // const disambiguates
+  lml::tupl t = {1,2,"3"};
 
-  getie<2>(refs) = {"5"}; // assign to array element
-  getie<0,1>(refs) = {3,4}; // multi-index get -> tie
+  getie<2>(t) = {"5"}; // assign to array element
+  getie<0,1>(t) = {3,4}; // multi-index get -> tie
 
   return z;
 }
 ```
 
-`tie` assignment accepts braced init-lists (as do the free functions).
-
-Assignment from braced list `={...}` is a
-"keep simple things simple"  
-syntax that extends nicely to reference ties just as for value tuples.  
+Assignment from braced list `={...}` is a simple
+syntax that extends nicely  
+to reference ties just as for value tuples.  
 
 `ties` list-assignment keeps the semantics of the equivalent `tupl` builtin  
 aggregate assignment in only allowing non-narrowing conversions, then  
 differs in that it handles arrays and avoids creating temporaries but it can  
 only handle all-move (rvalue) or all-copy (lvalue) assignments, not a mix.
 
-`ties` also admits assignments from other tuplish types
-(see [assignment](#assignments)).  
-To mix move and copy assignments, assign from a forwarding tupl;
+`ties` also admits assignments from other tuplish types.  
+To mix move and copy assignments, assign from a forwarding tupl:
 
 ```c++
-  lml::tie(c,m) = lml::fwds{cc, std::move(mo)};
-```
+  lml::tie(cp,mv) = tie_fwd(cc, std::move(mm));
 
-(There's no need to use the `tie_fwd` function, but it might be clearer.)
+  // Equivalents:
+  lml::tie(cp,mv) = lml::fwds{cc, std::move(mm)};
+  assign_elements(lml::tie(cp,mv), cc, std::move(mm)};
+```
 
 ### Other `tuplish`
 
-* `tupl{v...}` the basic tuple; deduces all values, nothing added
-* `lupl{v...}` a basic `tupl` without `[[no_unique_address]]`
+* `tupl{v...}` the basic tuple; deduces all values, nothing added.
+* `lupl{v...}` a basic `tupl` without `[[no_unique_address]]`.
 
 `tupl` derived types `ties`, `cmps` & `vals` add specific operators:
 
-* `ties{v...}` deduces forwarding references, adds assignments
-* `vals{v...}` deduces all values, adds assignments
-* `cmps{v...}` deduces 'tupl_view' types, adds comparisons
+* `ties{v...}` deduces forwarding references, adds assignments.
+* `vals{v...}` deduces all values, adds assignments.
+* `cmps{v...}` deduces 'tupl_view' types, adds comparisons.
 
-`ties` and `vals` opt in to assignments from other tupl types with  
-compatible assignable types as well as braced-list assignments.  
-`cmps` opts in to comparisons with other comparable tupl types
+`ties` and `vals` opt in to heterogeneous assignments from other tupl types  
+with compatible assignable types, as well as assignments from braced-lists.
+
+`cmps` opts in to heterogeneous comparisons with other tupl types where  
+all corresponding elements are comparable.
 
 The intent of each type is reflected in its CTAD rules.  
 Four types add only CTAD, to deduce or constrain accepted types:
@@ -332,7 +379,54 @@ Four types add only CTAD, to deduce or constrain accepted types:
 
 (They add nothing else.)
 
-## Triviality and layout
+## Comparisons
+
+`tupl` three-way comparison `<=>` is defaulted as a hidden friend function,  
+if that's possible, otherwise it's implemented out-of-class, if possible.
+
+The comparison operators are only defined for exact same-type tupls.
+
+### `tupl` operands are same-type only
+
+* `std::tuple` can assign-from any tuple of assignable-from types and it  
+can compare-with any tuple of comparable-with types.
+  
+* `tupl`'s builtin assignment and default comparisons naturally only work  
+for operands of the same type.
+
+This same-type restriction is a safe default.
+
+Heterogeneous or converting operations are provided by free functions  
+or by use of derived `tuplish` types that add the desired operators.  
+
+For heterogeneous assignments, functions `assign` and `assign_elements`  
+were introduced above, along with `ties` and `vals` tuplish assignment types.
+
+For heterogeneous comparisons there are free functions:
+
+```c++
+  compare3way(l,r)
+  equals(l,r)
+```
+
+Note that the `compare3way` function accepts tupls of different size  
+(unlike the `std` equivalent).
+
+The `cmps` tupl type adds heterogenous comparisons, e.g.:
+
+```c++
+  #include <string>
+  using std::string::operator""s;
+
+  tupl stringstd{"c++"s,20};
+
+  if (stringstd == cmps{+"c++",20}) ;
+```
+
+Here the `std::string` element is compared with a `char*` value  
+(the `+` is needed to force decay because `tupl` always avoids decay).
+
+## Aggregate properties
 
 `tupl` is always aggregate, regardless of element types:
 
@@ -346,6 +440,7 @@ As a struct aggregate of its element types it propagates their properties:
 ```c++
   tupl tup = { 1, 2U, "3" };
 // tupl<int, unsigned, char[2]>
+
   using Tup = decltype(tup);
 
   static_assert( is_trivially_copyable<Tup>()
@@ -355,17 +450,18 @@ As a struct aggregate of its element types it propagates their properties:
                );
 ```
 
-`tupl` is structural if all its element types are
-(a type is *structural* if it can  
-be used as a non-type template parameter):
+`tupl` is structural if all its element types are.  
+A type is *structural* if it can be used as a non-type template parameter:
 
 ```c++
   template <auto> using is_structural = true_type;
   static_assert(        is_structural<Tup{}>());
 ```
 
+## Layout
+
 **`tupl`** layout has `[[no_unique_address]]` attribute on all members.  
-**`lupl`** is a 'layout compatible' tupl without `[[no_unique_address]]`
+**`lupl`** is a 'layout compatible' tupl without `[[no_unique_address]]`.
 
 Don't use `tupl` in multi-platform external APIs - **it isn't portable**.  
 Instead, use `lupl` where portable standard layout is required.  
@@ -375,13 +471,12 @@ It's safe to reinterpret_cast a struct to a lupl for tuple-like access;
 `std::is_layout_compatible` provides the required check:
 
 ```c++
-  struct Agg {int i; unsigned u; char c[2];};
+  struct Agg {int i; unsigned u; char c[2];} agg;
 
   using Lup = lupl<int, unsigned, char[2]>;
   static_assert(is_layout_compatible<Lup,Agg>());
 
   // access agg as a tuple
-  Agg agg;
   get<1>(reinterpret_cast<Lup&>(agg)) = 2u;
 ```
 
@@ -434,95 +529,65 @@ Elements may be accessed by member id, `get`, or the new `getie`:
 
 Here, `getie<2>(tup)` combines `get` and `tie` as `tie(get<2>(tup))`.
 
-## Comparisons
-
-`tupl` three-way comparison `<=>` is defaulted as a hidden friend function  
-(if that's possible, else it's implemented out-of-class, if possible).
-
-The comparison operators are only defined for exact same-type tupls.  
-For heterogeneous comparisons there are named functions:
-
-```c++
-  compare3way(l,r)
-  equals(l,r)
-```
-
-The `compare3way` function accepts tupls of different size.  
-The `cmps` tupl type adds heterogenous comparisons, e.g.:
-
-```c++
-  #include <string>
-  using std::string::operator""s;
-
-  tupl stringstd{"c++"s,20};
-
-  if (stringstd == cmps{+"c++",20}) ;
-```
-
-Here the `std::string` element is compared with a `char*` value  
-(the `+` is needed to force decay because `tupl` always avoids decay).
-
 ## Headers
 
 * **`tupl.hpp`** provides basic value tuple types, `tupl` and `lupl`,  
 tupl-derived types with CTAD, `fwds`, `lvals`, `rvals` & `cvals`,  
 accessors, `get<I>`, `get<T>`, `tupl_mptr` &  `tupl_mptrs`,  
 comparison operators `<=>`,`==`, plus `equals` & `compare3way`  
-free functions, `assign` & `assign_elements` (no `operator=`)  
-and `tupl_init` and `tupl_cat` 'maker' functions.
+free functions, `assign` & `assign_elements` (no `operator=`).
 
 * **`tupl_traits.hpp`** defines concepts, traits and type-list tools  
 useful for type-list manipulation and for defining tuplish types.
 
+* **`tupl_cat.hpp`** defines `tupl_init` and `tupl_cat` functions.
+
+* **`index_sequences.hpp`** exposes `integer_sequence` tools,  
+used by `tupl_cat`.
+
 `tupl`-derived types:
 
 * **`tupl_tie.hpp`** derives a `ties` tupl for reference tuples  
-with added assignment ops, plus `tie` and `getie` functions.
+with added assignment operators, plus `tie` and `getie` functions.
 * **`tupl_vals.hpp`** derives a `vals` tupl, with added assignment ops.
 * **`tupl_cmps.hpp`** derives a `cmps`, tupl with added comparison ops.
+
+(`tupl_platform.hpp` is an internal header of macros for portability.)
 
 **`tupl_amalgam.hpp`** amalgamates all these library headers in one, along  
 with all required headers from the `c_array_support` library dependency.  
 The amalgam is auto-generated (so don't edit it!).
 
-<a href=https://godbolt.org/z/333GYoo4s><img src=tupl_impl/CE.png width=52 style="vertical-align:middle"></a>
-Compiler Explorer link with `#include "tupl_amalgam.hpp"`
-
 ## Dependencies
 
-Sibling library `"c_array_support"` plus `<concepts>` and `<compare>`  
-C++ standard library headers are the minimal set of build dependencies  
-(`tupl_amalgam.hpp` depends only on the `std` includes).
+Sibling library dependencies:
 
-[**`c_array_support`**](https://github.com/willwray/c_array_support)
-provides C array assignments and comparisons.
+* **`c_array_support`** for C array assignment and comparison.
+* **`IREPEAT`** (optional dependency, mostly for developers).
 
-C++ std dependencies:
+**`std`** C++ dependencies:
 
 * `<`**`concepts`**`>` for `assignable_from`, `ranges::swap`, etc.
 * `<`**`compare`**`>` for three-way `operator<=>` comparisons, etc.
 * `<cstdint>` is also required on MSVC, for `uintptr_t` only.
 
-Note: no dependence on `<utility>` or use of `index_sequence`.
-
-The library depends on non-standard compiler extensions, in particular  
-integer-sequence builtins are used specific to GCC, Clang and MSVC.  
-These are confined to the `tupl_platform.hpp` header.
+Note: no dependence on `<utility>` or use of `index_sequence`;  
+`tupl` does not subscribe to the `std` 'tuple protocol'.
 
 The `#include` dependencies are best seen in a diagram.
 
 ```mermaid
   flowchart TD
+    subgraph tupl library
     tupl_tie.hpp --> tupl.hpp
     tupl_vals.hpp --> tupl.hpp
     tupl_cmps.hpp --> tupl.hpp
-    tupl_amalgam.hpp
-    subgraph tupl
+    tupl_cat.hpp --> tupl.hpp
+    tupl_cat.hpp --> index_sequences.hpp
     tupl.hpp --> tupl_traits.hpp
-    tupl.hpp --> tupl_impl.hpp
-    tupl.hpp ---> tupl_platform.hpp
+    tupl.hpp .-> markdown["<sub>tupl_impl/tupl_impl.pp<br>preprocess -> tupl_impl.hpp</sub>"]
     end
-    subgraph c_array_support
+    subgraph c_array_support library
     tupl.hpp -...-> c_array_compare.hpp
     tupl_traits.hpp -..-> c_array_assign.hpp
     c_array_compare.hpp --> std["#lt;compare#gt;"]
@@ -535,56 +600,37 @@ The `#include` dependencies are best seen in a diagram.
     end
 ```
 
+[**`c_array_support`**](https://github.com/lemuriad/c_array_support)
+is a sibling library split out early in development of  
+`tupl` and published alongside in the Lemuriad GitHub organization.  
+
+[`IREPEAT`](https://github.com/lemuriad/IREPEAT)
+is also published in the Lemuriad GitHub organization.  
+See below for details of its use in preprocessor codegen.
+
+`tupl` depends on non-standard compiler extensions.  
+integer-sequence builtins are used that are compiler-specific.  
+This is done to avoid dependency on `std` `<integer_sequence>`.
+
 ### Developer dependencies
 
-The supported build systems are meson.build and / or CMake.  
-The provided scripts come with options or presets for developers.
-
-Meson >= v1.0 is required. The meson.build system depends on Python  
-(the Python dependency is addressed by [`muon`](https://sr.ht/~lattis/muon/),
-not yet tested on `tupl`).
-
-The build scripts fetch all dependencies from github repos automatically  
-(or they can be download manually if preferred).
-
-The [`IREPEAT`](https://github.com/willwray/IREPEAT)
-preprocessor library is used to generate `"tupl_impl.hpp"`  
-by preprocessing `tupl_impl/tupl_impl.pp"` and component includes:
-
-```mermaid
-  flowchart LR
-    tupl_impl[tupl_impl.pp<br>tupl_impl_noedit_warn.hpp<br>tupl_impl_assign.hpp<br>tupl_impl_compare.hpp<br>tupl_impl_cat.hpp<br>-- tupl_impl_int_seq.hpp] -->|preprocess<br>IREPEAT| tupl_impl.hpp
-    style tupl_impl text-align:left
-
-```
-
-A shell script `amalgamate.sh` generates `"tupl_amalgam.hpp"`,  
-from `tupl_impl.hpp`, other `tupl` and `c_array_support` headers,  
-so a git-bash shell or similar is required to run this step on Windows.
-
-The [`snitch`](https://github.com/cschreib/snitch)
-"Lightweight C++20 testing framework" is used for tests.  
-It has no meson support yet, so CMake is required to set up  build targets.
+* [`snitch`](https://github.com/cschreib/snitch) lightweight C++20 testing framework
+* [`meson`](https://mesonbuild.com/) version >= 0.64.0 (no CMake yet)
+* Python is required for meson build
+* `bash` shell, or `git-bash` or similar on Windows,  
+to run the `amalgamate.sh` shell script
 
 ## Build
 
-See the demo project
-[`tupl_play`](https://github.com/Lemuriad/tupl_play)
-for an example client set up, with meson.
+A build setup is recommended, even for header-only projects, although  
+single header `tupl_amalgam.hpp` provides a quick way to get started.  
 
-A build setup is recommended, even for header-only projects, though no  
-build step is necessary. The single header `tupl_amalgam.hpp` provides  
-a quick way to get started with no dependencies beyond C++ std library.  
+[meson.build](https://mesonbuild.com/) scripts are provided
+requiring `meson` >= v0.64.0  
+(there's no CMake support yet; contributions are welcome.
 
-A meson.build setup is provided. CMake is coming.
-
-* Fetch dependencies from github (via meson git-wraps)
-* Marshall header paths
-* Specify build flags and configuration options
-* Preprocess $\rightarrow$ `tupl_impl.hpp`
-* Generate $\rightarrow$ `tupl_amalgam.hpp`
-* Build and run tests
-* ToDo: Benchmarks and static analysis
+`meson setup` fetches all dependencies from GitHub repos automatically,  
+if they are not present, or they can be download manually if preferred.
 
 ```bash
   git clone https://github.com/Lemuriad/tupl.git
@@ -595,23 +641,40 @@ A meson.build setup is provided. CMake is coming.
   meson test -C build
 ```
 
-The provided build scripts set up a target to auto-generate `tupl_impl.hpp`  
-initially, and on recompiles if the `tupl_impl` implementation files are edited.
+* Fetch dependencies from github (via meson git-wraps)
+* Marshall header paths
+* Specify build flags and configuration options
+* Preprocess $\rightarrow$ `tupl_impl.hpp`
+* Generate $\rightarrow$ `tupl_amalgam.hpp`
+* Build and run tests
+* ToDo: Benchmarks and static analysis
+
+See demo project
+[`tupl_xampl`](https://github.com/Lemuriad/tupl_xampl)
+for an example client setup, using meson.
 
 When the `tupl` library is used as a meson subproject dependency then test  
-targets are not set up by default, and the `snitch` library is not downloaded.
+targets are not set up by default, and the `snitch` library is not downloaded.  
+Use build configuration option `-D tupl:tests=enabled` if you want tests.
 
 A custom target is added to auto-generate the `tupl_amalgam.hpp` header,  
-only when build option `tupl_codegen=enabled` is configured (not by default).
+when build option `tupl_codegen=enabled` is configured (not by default).
 
-### `tupl_impl.hpp` codegen
+### Codegen
 
-Setting symbol `TUPL_IMPL_PREPROCESS` forces codegen on all recompiles  
-by conditionally including the un-preprocessed `tupl_impl/tupl_impl.pp`  
-instead of its preprocessed output `tupl_impl.hpp`.
+The [`IREPEAT`](https://github.com/lemuriad/IREPEAT)
+preprocessor library is used to generate `"tupl_impl.hpp"`  
+by preprocessing `tupl_impl/tupl_impl.pp"` and component includes:
+
+```mermaid
+  flowchart LR
+    tupl_impl[tupl_impl.pp<br>tupl_impl_noedit_warn.hpp<br>tupl_impl_assign.hpp<br>tupl_impl_compare.hpp] -->|preprocess<br>IREPEAT| tupl_impl.hpp
+    style tupl_impl text-align:left
+
+```
 
 It's possible to generate `tupl_impl.hpp` by direct preprocessor invocation,  
-e.g. with these GCC options:
+e.g. from the root directory with these GCC options:
 
 ```bash
 g++ -I. -Isubprojects/IREPEAT -Itupl_impl
@@ -619,20 +682,35 @@ g++ -I. -Isubprojects/IREPEAT -Itupl_impl
     -o tupl_impl.hpp tupl_impl/tupl_impl.pp
 ```
 
-The build target currently isn't invocable from the meson commandline.  
-It can currently be invoked from the ninja backend via a circuitous path:
+The meson build scripts set up a target to auto-generate `tupl_impl.hpp`  
+initially, and on recompiles if the `tupl_impl` implementation files are edited.
+
+meson v0.64.0 introduced support for preprocessor targets so this sets the  
+minimum version requirement.
+Support is improved in more recent versions.
+
+The build target doesn't appear to be invocable from the meson commandline.  
+It can be invoked from the ninja backend:
 
 ```bash
-ninja -C build tupl_impl/preprocessor.p/../tupl_impl.hpp
+ninja -C build tupl_impl.hpp
 ```
 
+`tupl_amalgam.hpp` is also a build target.  
+To generate the amalgamated header, run:
 
+```bash
+meson compile -C build tupl_amalgam.hpp
+```
 
-### Configuration options
+### Build configuration options
 
 `-D tupl_max_arity` configures the max number of elements.  
 `-D no_lupl` option omits the codegen of `lupl` specializations.  
-`-D namespace_id` configures the library namespace.
+`-D namespace_id` configures the library namespace.  
+`-D tests` set `=enabled` or `=disabled` to control test targets.  
+`-D tupl_codegen` set `=enabled` for `tupl_amalgam.hpp` generation  
+or set `=disabled` to inhibit `IREPEAT` download.
 
 The default configuration sets `tupl_max_arity` as 16 (== 0x10).  
 To configure a different max (use meson `--wipe` flag to reconfigure):
@@ -641,9 +719,8 @@ To configure a different max (use meson `--wipe` flag to reconfigure):
   meson setup -D tupl_max_arity=24 build
 ```
 
-These codegen options will be made meaningless, and may be removed,  
-in a future version that uses a proper variadic implementation.  
-The `namespace_id` option may also be removed as it's a niche feature.
+When a proper variadic implementation of `tupl` becomes possible,  
+then `max_arity` will be made meaningless...
 
 ### Preprocessor config
 
@@ -651,14 +728,8 @@ Preprocessor symbols implement the configuration options:
 
 `TUPL_MAX_ARITY` sets the number of arity specializations.  
 `NO_LUPL` conditionally compiles-out `lupl` definition.  
-`NAMESPACE_ID` changes the default `lml` namespace.
-
-For development
-
+`NAMESPACE_ID` changes the default `lml` namespace.  
 `TUPL_IMPL_PREPROCESS` forces preprocessing on recompile.
-
 
 ## [Appendices](readmore.md#appendices)
 * [Initialization](readmore.md#initialization), [Assignments](readmore.md#assignments), [Design](#tupl-design-notes)
-
-Tested on recent GCC>=10, Clang and MSVC compilers.
