@@ -60,6 +60,10 @@ sed -n '/^#include \"namespace.hpp\"/,//p' ../tupl/tupl_vals.hpp | sed '1d;$d' >
 
 sed -n '/^#include \"namespace.hpp\"/,//p' ../tupl/tupl_cmps.hpp | sed '1d;$d' >> tupl_amalgam.hpp
 
+sed -n '/^#include \"namespace.hpp\"/,//p' ../tupl/index_sequences.hpp | sed '1d;$d' >> tupl_amalgam.hpp
+
+sed -n '/^#include \"namespace.hpp\"/,//p' ../tupl/tupl_cat.hpp | sed '1d;$d' >> tupl_amalgam.hpp
+
 cat ../tupl_impl/namespace.hpp >> tupl_amalgam.hpp
 
 sed -n /UNDEFINE/,\$p ../tupl/tupl_platform.hpp | sed 1d >> tupl_amalgam.hpp

@@ -4,6 +4,8 @@
  Repo: https://github.com/Lemuriad/tupl
 */
 
+#include "namespace.hpp"
+
 // Generalized integer_sequence types
 
 // INT_SEQ_MAP & SEQ_MAP platform-specific macros
@@ -30,12 +32,6 @@ typename __make_integer_seq<int_seq_map<f>::template ty,int,N>::type;
 
 #endif
 
-#include "namespace.hpp"
-
-// ij_t is a pair of int indices i,j
-//
-struct ij_t {int i,j;};
-
 // val_seq<T,v...> sequence of values of structural type T
 //
 template <typename T, T...v> struct val_seq {};
@@ -43,15 +39,23 @@ template <typename T, T...v> struct val_seq {};
 //template<auto f,int...I>
 INT_SEQ_MAP(using type = val_seq<decltype(f(0)),f(I)...>)
 
+#undef INT_SEQ_MAP
+
 // val_seq_map<f,N> = val_seq of values f(I)... for I in [0..N)
 //
 template <auto f, int N> using val_seq_map = SEQ_MAP();
+
+#undef SEQ_MAP
 
 // int_seq<N,B,S> = int seq of N ints starting at B with step S
 //                  B + S*[0..N)
 //
 template <int N, int B = 0, int S = 1>
 using int_seq = val_seq_map<[](int i){return B+S*i;},N>;
+
+// ij_t is a pair of int indices i,j
+//
+struct ij_t {int i,j;};
 
 namespace impl {
 // ij_map<s...> is a 2d index sequence of int pairs {i,j}
@@ -83,8 +87,5 @@ template <int...siz> requires ((siz+...+0)==0) struct ij_map<siz...>
 //
 template <int...siz>
 using ij_seq = val_seq_map<impl::ij_map<siz...>{},(siz+...+0)>;
-
-#undef SEQ_MAP
-#undef INT_SEQ_MAP
 
 #include "namespace.hpp"
