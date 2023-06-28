@@ -1,0 +1,102 @@
+################################################################################################
+# TUPL status report function.
+# Automatically align right column and selects text based on condition.
+
+function(tupl_status text)
+  set(status_cond)
+  set(status_then)
+  set(status_else)
+
+  set(status_current_name "cond")
+  foreach(arg ${ARGN})
+    if(arg STREQUAL "THEN")
+      set(status_current_name "then")
+    elseif(arg STREQUAL "ELSE")
+      set(status_current_name "else")
+    else()
+      list(APPEND status_${status_current_name} ${arg})
+    endif()
+  endforeach()
+
+  if(DEFINED status_cond)
+    set(status_placeholder_length 38) # if too small, you will get a wrap around in the output report
+    string(RANDOM LENGTH ${status_placeholder_length} ALPHABET " " status_placeholder)
+    string(LENGTH "${text}" status_text_length)
+    if(status_text_length LESS status_placeholder_length)
+      string(SUBSTRING "${text}${status_placeholder}" 0 ${status_placeholder_length} status_text)
+    elseif(DEFINED status_then OR DEFINED status_else)
+      message(STATUS "${text}")
+      set(status_text "${status_placeholder}")
+    else()
+      set(status_text "${text}")
+    endif()
+
+    if(DEFINED status_then OR DEFINED status_else)
+      if(${status_cond})
+        string(REPLACE ";" " " status_then "${status_then}")
+        string(REGEX REPLACE "^[ \t]+" "" status_then "${status_then}")
+        message(STATUS "${status_text} ${status_then}")
+      else()
+        string(REPLACE ";" " " status_else "${status_else}")
+        string(REGEX REPLACE "^[ \t]+" "" status_else "${status_else}")
+        message(STATUS "${status_text} ${status_else}")
+      endif()
+    else()
+      string(REPLACE ";" " " status_cond "${status_cond}")
+      string(REGEX REPLACE "^[ \t]+" "" status_cond "${status_cond}")
+      message(STATUS "${status_text} ${status_cond}")
+    endif()
+  else()
+    message(STATUS "${text}")
+  endif()
+endfunction()
+
+################################################################################################
+# Function merging lists of compiler flags to single string.
+# Usage:
+#   tupl_merge_flag_lists(out_variable <list1> [<list2>] [<list3>] ...)
+function(tupl_merge_flag_lists out_var)
+  set(__result "")
+  foreach(__list ${ARGN})
+    foreach(__flag ${${__list}})
+      string(STRIP ${__flag} __flag)
+      set(__result "${__result} ${__flag}")
+    endforeach()
+  endforeach()
+  string(STRIP ${__result} __result)
+  set(${out_var} ${__result} PARENT_SCOPE)
+endfunction()
+
+####
+# Prints accumulated tupl arithmetic library configuration summary
+# Usage:
+#   tupl_print_configuration_summary()
+
+function(tupl_print_configuration_summary)
+
+    tupl_merge_flag_lists(__c_flags_rel CMAKE_C_FLAGS_RELEASE CMAKE_C_FLAGS)
+    tupl_merge_flag_lists(__c_flags_deb CMAKE_C_FLAGS_DEBUG CMAKE_C_FLAGS)
+    tupl_merge_flag_lists(__cxx_flags_rel CMAKE_CXX_FLAGS_RELEASE CMAKE_CXX_FLAGS)
+    tupl_merge_flag_lists(__cxx_flags_deb CMAKE_CXX_FLAGS_DEBUG CMAKE_CXX_FLAGS)
+
+    tupl_status("")
+    tupl_status("******************* Universal Arithmetic Library Configuration Summary *******************")
+    tupl_status("General:")
+    tupl_status("  Version                          :   ${PROJECT_VERSION}")
+    tupl_status("  System                           :   ${CMAKE_SYSTEM_NAME}")
+    tupl_status("  C++ Language Requirement         :   C++${CMAKE_CXX_STANDARD}")
+    tupl_status("  C compiler                       :   ${CMAKE_C_COMPILER}")
+    tupl_status("  Release C flags                  :   ${__c_flags_rel}")
+    tupl_status("  Debug C flags                    :   ${__c_flags_deb}")
+    tupl_status("  C++ compiler                     :   ${CMAKE_CXX_COMPILER}")
+    tupl_status("  Release CXX flags                :   ${__cxx_flags_rel}")
+    tupl_status("  Debug CXX flags                  :   ${__cxx_flags_deb}")
+    tupl_status("  Build type                       :   ${CMAKE_BUILD_TYPE}")
+    tupl_status("")
+    tupl_status("  BUILD_ALL                        :   ${BUILD_ALL}")
+    tupl_status("  BUILD_CI                         :   ${BUILD_CI}")
+    tupl_status("")
+    tupl_status("Install:")
+    tupl_status("  Install path                     :   ${CMAKE_INSTALL_PREFIX}")
+    tupl_status("")
+endfunction()
