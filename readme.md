@@ -57,9 +57,9 @@ Also at [boost.org](http://www.boost.org/LICENSE_1_0.txt) and accompanying file 
 ## Contents
 
 * [`tupl`](#tupl-introduction) introduction
-and [API](#tupl-api-by-example) examples
+and [API](#tupl-api-by-example) by example
 * [`ties`](#ties-introduction) introduction
-and [API](#ties-api-by-example) examples
+and [API](#ties-api-by-example) by example
 * [Comparisons](#comparisons), `cmps`, 3-way and equals
 * [Aggregate properties](#aggregate-properties), [Layout](#layout) and [Member ids](#member-ids)
 * [Headers](#headers), [Dependencies](#dependencies) and [Build](#build)
@@ -68,143 +68,427 @@ and [API](#ties-api-by-example) examples
  [Assignments](readmore.md#assignments)  
  [`tupl` design](#tupl-design-notes) and `std::tuple` comparison
 
+----
+
 ## `tupl` introduction
 
-**`tupl`** is a tuple type for C++20 with low
-[abstraction penalty](
-https://en.wikipedia.org/wiki/High-level_programming_language#Abstraction_penalty).
+`tupl` is a C++20 library named after its core type:
+
+* `tupl`: a
+[Rule of Zero](https://isocpp.github.io/CppCoreGuidelines/CppCoreGuidelines#Rc-zero)
+tuple type that wants to be a builtin.
+
+It depends only on `std` library `<concepts>` and `<compare>`.
+
+It follows familiar tuple APIs, like `std::tuple`, as appropriate,  
+and also incorporates innovations in tuple API design.
+
+----
+
+### **`tupl`** types
 
 Imagine if C++ had tuples built in to the language...
 
-* **`tupl<E...>`** $\rightarrow$ `struct { E ...x; };`
+* **`lupl<Xs...>`** $\rightarrow$ `struct { Xs...x; };`
+* **`tupl<Xs...>`** $\rightarrow$ `struct { NUA Xs...x; };`
 
-That is, `tupl` is simply a struct aggregate with  member types `E...`
+That is, `lupl` is simply a struct
+[aggregate](https://en.cppreference.com/w/cpp/language/aggregate_initialization)
+with  member types `Xs...`  
+and `tupl` adds `NUA` =
+[`[[no_unique_address]]`](https://en.cppreference.com/w/cpp/language/attributes/no_unique_address)
+on all members.
 
-As an aggregate,
-the properties of its elements propagate up to `tupl`:
+`tupl` and `lupl` are clearly
+[layout-compatible](https://en.cppreference.com/w/cpp/types/is_layout_compatible)
+ with equivalent structs  
+(that's what they are!) but only `lupl` can be
+[standard-layout](https://en.cppreference.com/w/cpp/named_req/StandardLayoutType):
 
-* If `E...` are all
+* **`lupl<X0,X1...Xf>`**  
+$\rightarrow$ `struct { X0 x0; X1 x1, ..., Xf xf; };`
+
+For portable standard layout use `lupl` or, for internal use only ... ,  
+`tupl` layout may be better packed and generate more optimal code.  
+From now on we take `tupl` to mean 'tupl or lupl'.
+
+#### Triviality
+
+`tupl` is an aggregate so its member properties propagate up to it:
+
+* If `Xs...` are all
 [trivial](https://en.cppreference.com/w/cpp/named_req/TrivialType) /
 [structural](https://eel.is/c++draft/temp.param#def:type,structural) /
 [regular](https://en.cppreference.com/w/cpp/concepts/regular) types  
-then `tupl<E...>` is a trivial / structural / regular type.
+then `tupl<Xs...>` is a trivial / structural / regular type.
 
 In particular, a `tupl` is
 [*TriviallyCopyable*](https://en.cppreference.com/w/cpp/named_req/TriviallyCopyable)
-if all its elements are.  
-Trivial types are cheap to pass to and return from functions and enable  
-compilers to inline deeper, realising more optimization opportunities.
+if all its elements are.
+
+Trivial types are cheap to pass to and return from functions, and  
+triviality enables deeper inlining and optimization of call stacks.
 
 `tupl` has *no non-static member functions*.
 A true 'Rule of Zero' type,  
-it relys on builtin langauge mechanics for much of its 'API'.
+it relies on builtin language mechanics for much of its 'API'.
 
-### Aggregate nature
+`tupl` is used primarily as a value type (its CTAD deduces values).
 
-`tupl` embraces curly braces! Its builtin 'API' encourages their use.
+`tupl` also serves as a base class for deriving other `tuplish` types  
+that may hold references, add constructors or member functions.
 
-Braces protect against narrowing conversions in aggregate initialization  
-and so also in 'aggregate assignment' from a braced initializer-list.  
-Class template argument deduction works nicely with braces
-{[CTAD](https://en.cppreference.com/w/cpp/language/class_template_argument_deduction)}:
+----
 
-```c++
-  tupl cppstd = {"c++",17}; // CTAD + aggregate init
-  if (cppstd < tupl{"c++",20}) // same-types compare
-     cppstd = {"c++",23}; // 'aggregate assignment'
-  cppstd = {"c++"}; // ok?
-             // ^  warning: missing int init value
-```
+### `tuplish` types
 
-In C++20, aggregates can also be initialized with parentheses, `tupl(d,k)`.  
-This 'constructor syntax' is useful constructing objects of any, generic, type,  
-but the parens admit narrowing conversions and argument decay.
+<details><summary>
+<code>tupl</code> has two traits that identify it as a
+<code>tuplish</code> type.
+</summary>
 
-$\Rightarrow$ *Prefer curlies* !
+* A member typedef `tupl_t = tupl`
+* A function `map(t,f) -> f(t.xs...)`
 
-`tupl` embraces C arrays and regularizes them;
-tupl-of array is a regular type  
-(`std::tuple`, in contrast, is hostile to C array).
+`map` is a hidden friend function of `tupl`.  
+`map(t,f)` calls `f` with the members `xs...` of `tupl_t t`.  
+</details>
 
-$\Rightarrow$ *Aggregates should stick together* !
+Types derived from `tupl` inherit these `tuplish` traits and get  
+tuple access automatically.
+
+The library defines three derived `tuplish` types:
+
+* `ties` is a reference-tupl with assign-through semantics.  
+It supports non-same-type 'heterogeneous' assignments.
+
+* `vals` is a value tupl with extended assignment operators.
+
+* `cmps` is a tupl with heterogeneous comparison operators.
+
+(`tupl` itself only supports same type assignments and comparisons.)
+
+`ties`, `vals` and `cmps`, like `tupl`, are all aggregate types.
+
+----
 
 ## `tupl` API by example
 
-`tupl` is simple yet sufficient for most tuple use cases.
+`tupl` mostly just works as you'd expect a tuple to work.
+The snippets  
+that follow highlight examples where `tupl` differs from `tuple`.  
 
-Understanding `tupl`'s API starts with understanding C++ language rules  
-around aggregate types, their benefits and limitations.
+The differences derive from `tupl`'s aggregate nature. Understanding  
+aggregates is key to comprehending and making best use of `tupl`.
 
-`tupl` elements are all public and can be accessed directly by member id,  
-by structured binding, or by conventional indexed access `get<I>(t)`.  
+### Aggregate nature
 
-Assignment is builtin. Comparisons are `=default`, if possible.
+As an aggregate type `tupl` has no constructors so initialization means  
+aggregate initialization. It's builtin.
+
+<details><summary>
+<code>tupl</code> embraces curly braces as the natural way
+to initialize aggregates.</summary>
+
+${\quad}$ Since C++20, aggregates can also be initialized with parentheses  
+${\quad}$ (so constructor syntax can construct objects of any unknown type)  
+${\quad}$ but the parens admit narrowing conversions and argument decay.
+
+${\quad}$ Prefer curlies, except in generic code that demands parens.
+</details>
+
+`tupl` supports class template argument deduction
+{[CTAD](https://en.cppreference.com/w/cpp/language/class_template_argument_deduction)},
+with braces:
+
+```c++
+  tupl<char[4],int> cc{"C++",14}; // Explicit type
+
+  tupl cppstd{"c++",11}; // CTAD -> tupl<char[4],int>
+```
+
+Note how the string literal `"c++"` is deduced as `char[4]`, and initialized.  
+Different size string literals result in different types.
+
+C arrays are also aggregates but they're not regular, copyable types.  
+The `tupl` library treats them as if they're regular, but reality bytes.  
+C arrays remain an awkward edge case, so feature in most examples.
+
+String literals are overused in the snippets as convenient C array literals  
+that also conveniently succeed in initializing their `char[]` array target.
+
+`std::tuple` would deduce `char const*` and force decay-to-pointer.  
+With `tupl`, the programmer must take the address explicitly, if wanted:
+
+```c++
+  tupl cpp{&"cpp"}; // CTAD -> tupl<const char*>
+```
+
+`tupl` assignment is also builtin as it defines no `operator=` overloads.  
+We call assignment from braced initializer lists 'aggregate assignment'  
+because it works by aggregate initialization  followed by copy-assignment.
+
+A right hand side temporary of left hand side type is aggregate initialized  
+then copy-assigned to the left hand side (hopefully with copies elided):
+
+```c++
+  cppstd = {"c++",17}; // 'Aggregate assignment'
+  cppstd = {{'c','+','+','\0'},17}; // Equivalent
+  cppstd = {}; // Aggregate assign clear all fields
+
+  cppstd = {"cpp"}; // Warning: missing initializer
+  cppstd = {"cplusplus",20}; // FAILs to compile
+//  char[10] ^^^^^^^^^ too large for char[4] field
+```
+
+Braces catch narrowing conversions in initialization and assignment.  
+There's a warning when unsigned `next` is assigned to the `int` field:
+
+```c++
+  const char lang[] = "cpp"; // array variable
+  unsigned int next = {26U}; // unsigned vs signed
+  
+  cppstd = {"cpp",next}; // Warning/error: narrowing
+  cppstd = {lang,26}; // FAILs to compile:
+   // array ^^^^ initializer can't initialize array
+```
+
+Here, the array variable `lang` can't initialize the array field  
+(string literals are the only array values that are valid initializers)  
+(workarounds to deal with arrays are presented below).
+
+Comparisons also work by builtin aggregate rules, with library opt-in:
+
+```c++
+  if (cppstd != tupl<char[4],int>{})
+    return cppstd < tupl{"c++",20};
+```
+
+Unfortunately, the grammar doesn't allow a braced initializer list as the  
+right hand side of a comparison operator, so an explicit `tupl` type has to  
+be constructed for use in the comparison.
+
+_The following material is specific to C arrays and can be skipped_.
+
+#### **C arrays**
+
+`tupl` goes out of its way to support C arrays as-if regular values.  
+C arrays are aggregates and *aggregates should stick together*.
+
+<details><summary>
+Details and rationale of C array support.
+</summary>
+
+C arrays are irregular objects; they're not copyable or comparable.
+
+C arrays, when members of structs, are regularized by language rules  
+that make structs copyable; copy-constructors and copy-assignment  
+operators are implicitly synthesized to deal with array members.
+
+Comparisons can also be synthesized automatically, since C++20.  
+If `operator<=>` or `operator==` are  user-defined as `=default`  
+then lexicographic comparisons are generated for array members.
+
+`tupl` naturally regularizes C arrays using this language support.
+
+`tupl` also goes further:
+
+* `tupl` assumes that C arrays are regular copyable objects.
+
+It treats arrays as regular and doesn't accommodate their irregularity.  
+Attempts to copy arrays work if possible, or cause compiler errors,  
+and never result in silent decay-to-pointer and pointer copy.
+
+`tupl` is designed to be ready for a future in which C arrays _are_ regular  
+with workarounds to deal with the reality that they aren't regular yet.
+
+The CTAD guide is a consequence of this design choice:
+
+* `tupl` deduces arrays as arrays, with no decays.
+
+Now, array members deduced from array-valued initializers cannot be  
+initialized by those initializers (!) because language rules don't provide  
+copy construction of array members from array variable initializers.
+</details>
+
+<details><summary>
+<code>tupl</code> custom CTAD guide, deduces values with no decay.
+</summary>
+
+```c++
+template <typename...Xs> tupl(Xs const&...)
+                      -> tupl<Xs...>;
+```
+
+`tupl`, as a struct aggregate, has an implicit default deduction guide  
+that acts to decay array-valued initializers (apart from string literals)  
+to pointers.
+This deduction guide overrides it to prevent the decay.
+</details>
+
+`tupl` deduces arrays from array initializers, but initialization fails.  
+The workaround is to use a function to do the initialization:
+
+* `tupl_init` 'maker function' is a workaround for arrays.
+
+```c++
+  char a[]{"A"};
+//tupl c{a}; // tupl<char[2]>, FAILS to initialize
+  auto c = tupl_init(a); // Maker function workaround
+```
+
+### `tupl` API
+
+Let's take a more leisurely look at the 'API' from a slightly higher level.
 
 ```c++
 #include <tupl/tupl.hpp>
 
-// CTAD deduces <int,unsigned,char[2]> from {0,1U,"2"}
 constexpr lml::tupl t012 = {0,1U,"2"};
 
 auto tupl_API(lml::tupl<int,unsigned,char[2]> t = t012)
 {
+/*
+    ... Example code expanded below ...
+*/
+  return lml::tupl{t, true}; // Nested tupl return
+}
+
+auto [ret,err] = tupl_API(); // Structured binding
+```
+
+`tupl_API` takes argument `t` of type `tupl<int,unsigned,char[2]>`  
+the same type deduced for global constant `t012` from `{0,1U,"2"}`.
+
+The return type is `tupl<tupl<int,unsigned,char[2]>, bool>`
+
+> **Note**: Compilers disagree on the layout and `sizeof` the return type.  
+> For portable standard layout use 'layout tuple' `lupl` instead of `tupl`.  
+> Otherwise, `tupl` may be more efficient.
+See [layout](#layout).
+
+This `tupl` type is a regular type, both copyable and comparable, because  
+all fields are regular, or arrays of regular, type.
+
+Unlike `std::tuple`, only same `tupl` types are copyable and comparable:
+
+```c++
+  tupl<int,int,char[2]> d{t}; // FAIL: type mismatch
+
   auto s{t}; // Copy construct, as struct aggregate
-
-  assert(s == t); // Same types are comparable
-  // (Only same types are comparable, unlike tuple)
-
+  assert(s == t); // Builtin compare for same types
   s = t; // Copy-assign, aggregate struct builtin
-  // (Only same types are assignable, unlike tuple)
+  s = {0,1,"2"}; // OK, 'aggregate assignment'
 
+  s = tupl{0,1,"2"}; // FAILs to compile: mismatch
+  assert(s == tupl{0,1,"2"}); // FAIL: type mismatch
+
+  assert(equals(s,{0,1,"2"})); // OK, converts types
+```
+
+Free functions `equals` and `compare3way` can compare with a braced list  
+argument, including the empty list (but incomplete lists are rejected):
+
+```c++
+  equals(t,{}); // Because t == {} syntax is illegal
+  compare3way(t,{1,2,"3"});
+```
+
+`tupl` has a specialized `swap` free function (not a friend and not a CPO)  
+(it is otherwise specified similarly to C++20
+[`std::ranges::swap`](https://en.cppreference.com/w/cpp/utility/ranges/swap)).
+
+You should use the
+[ADL 'two step'](https://quuxplusone.github.io/blog/2020/07/11/the-std-swap-two-step/)
+if `std` types may be involved:
+
+```c++
+  using std::swap;
   swap(s,t); // Specialized elementwise lml::swap
+```
 
-  t = {}; // Clear by builtin 'aggregate assignment'
-  assert(equals(t,{})); // t == {} syntax is illegal
+Structured bindings to `tupl` use the builtin aggregate rule (and not the  
+`std` 'tuple protocol' which involves specializing `std` template traits).
 
-  s = {1,2,"3"}; // Builtin 'aggregate assignment'
+```c++
+auto [ret,err] = tupl_API();
+```
 
-  auto& [i,u,c2] = s; // Structured binding access
-                      // by builtin aggregate rule
-                     // (not by std 'tuple protcol')
+A plain `auto` binding makes a copy of the right hand side; you
+generally  
+want a copy when binding to a function return type.
 
+For mutable access, though, remember to use a reference binding -  
+`&&` is always good:
+
+```c++
+  auto&& [i,u,c2] = s;
+```
+
+Structured binding looks a bit like the  inverse of aggregate initialization.  
+These bindings let us illustrate pros and cons of aggregate initialization:
+
+```c++
   t = {i,u}; // WARN of missing initializer, and...
   t = {u,i}; // WARN or FAIL, narrowing conversions
 
 //t = {i,u,c2}; // FAIL: array variable initializer
-
-// assign(t) function handles array variables
-  assign(t) = {i,u,c2}; // all initializers needed
-/*
-  Note: assign from braced list can only copy-assign
-  or move-assign from _all_ initializers, not a mix.
-
-  assign_elements allows elementwise move or copy:
-*/
-  assign_elements(t,i,u,c2);
-
-  t.x0 = {1}; // Direct access by known member id
-  get<1>(t) = {2}; // Usual indexed get<I> access
-//get<2>(t) = {"3"}; // FAIL: can't assign arrays
-
-  lml::assign(get<2>(t)) = {"3"}; // array assign
-/*
-  getie<2>(t) = {"3"}; // From <tupl/tupl_tie.hpp>
-*/
-  using lml::flat_index; //(1st array elem& or arg&)
-
-  // This map adds 3 to each element of tupl t:
-  map(t ,[](auto&...a){((flat_index(a)+=3),...);});
-
-  assert((t == lml::tupl{4,5U,"6"}));
-
-  return lml::tupl{t, true}; // Nested tupl return
-      // tupl< tupl<int, unsigned, char[2]>, bool >
-}
+//tupl c{i,u,c2}; // FAIL: array variable initializer
 ```
 
-> **Note**: Compilers disagree on the layoutand `sizeof` the return type.  
-> For portable standard layout use 'layout tuple' `lupl` instead of `tupl`  
-> see the section on [layout](#layout) below.
+Compilers will warn about missing initializers or implicit conversions.  
+Make sure that the warnings are enabled, and act on them, then struct  
+aggregates are as safe as or safer than tuples that have constructors.
+
+Aggregate initialization has the irritating edge case that it doesn't deal  
+with array-valued initializers (except string literals).
+
+The workaround, to deal with the possible presence C arrays, is to use  
+free functions `assign`, `assign_elements` and `tupl_init` :
+
+```c++
+  assign(t) = {};
+  assign(t) = {i,u,c2};
+  assign(t, {i,u,c2});
+  assign_elements(t,i,u,c2);
+
+  auto c = tupl_init(i,u,c2);
+```
+
+Both `assign` and `assign_elements` are also defined for C arrays.  
+`assign_elements` allows elementwise move or copy and avoids the  
+possible creation of temporaries in braced initializer constructs.
+
+### `tupl` access
+
+Now, let's look at `tupl` access alternatives:
+
+* `get<I>(t)` provides the usual indexed access.  
+* `getie<I...>(t)` is a combined `get` and `tie`  
+(from `tupl/tupl_tie.hpp`)
+
+
+`tupl` elements are all public and can be accessed directly by member id,  
+by structured binding (as we've seen) or by pointer-to-member:
+
+```c++
+  t.x0 = {1}; // Direct access by known member id
+  get<1>(t) = {2}; // Usual indexed get<I> access
+
+  constexpr auto first = lml::mptr<0,decltype(t)>;
+              // = &tupl<int,unsigned,char[4]>::x0
+  t.*first = {0}; // Access via a member-pointer
+
+//get<2>(t) = {"3"}; // FAIL: can't assign arrays
+```
+
+Note the use of braces on the right hand sides, to catch conversions.  
+The workaround for array member access is to use `assign` or `getie`:
+
+```c++
+  lml::assign(get<2>(t)) = {"3"}; // array assign
+  getie<2>(t) = {"3"}; // From <tupl/tupl_tie.hpp>
+```
 
 ### `tupl` `map`
 
@@ -220,70 +504,74 @@ As such, `map` is  hidden from ordinary name lookup and can only be found
 by [ADL](https://en.cppreference.com/w/cpp/language/adl),
 argument dependent lookup, when passed a `tupl` argument.
 
-`map(t,f)` calls functor `f` with tupl `t`'s elements `x...` as arguments:
+`map(t,f)` calls functor `f` with tupl `t`'s elements `xs...` as arguments:
 
-`map(t,f) -> f(x...)`
+`map(t,f) -> f(xs...)`
 
-The functor `f` will usually accept `x...` as a variadic argument pack.
+The functor `f` will usually accept `xs...` as a variadic argument pack.  
+This `map` example adds 3 to each element of a tupl `t`:
 
-As an example of `map` usage, here's a `tupl` stream printer:
+```c++
+  lml::tupl t = {1,2U,3L};
+
+  map(t, [](auto&...xs){
+                  ((xs += 3), ...);
+         }
+  );
+  assert((t == lml::tupl{4,5U,6L}));
+```
+
+The fold expression `((xs += 3), ...)` unrolls to evaluate as  
+`(t.x0 += 3, t.x1 +=3, t.x2 += 3)` - the `xs...` argument pack  
+is unfolded by `...`, which expands the comma operator expression.
+
+As fuller example of `map` usage, here's a `tupl` stream printer:
 
 ```c++
 #include <iostream>
 using std::ostream;
 
 #include "tupl.hpp"
-using lml::tuplish; // concept to accept tupl-likes
-using lml::as_tupl_t; // cast to embedded tupl type
-extern auto tupl_API(); // from the snippet above
-
-/* tupl stream print operator<<, a 'map' usage demo */
+using lml::tuplish; // Concept to accept tupl-likes
+using lml::as_tupl_t; // Cast to embedded tupl type
 
 ostream& operator<<(ostream& out, tuplish auto const& t)
 {
-  return map(as_tupl_t(t), [&out](auto&...a) -> auto&
+  return map(as_tupl_t(t), [&out](auto&...xs) -> auto&
   {
     char sep = '{';
-    auto sep_out = [&]{ // output '{' on first call
-           out << sep; // output ',' on following calls
+    auto sep_out = [&]{ // Output '{' on first call
+           out << sep; // Output ',' on following calls
            [[maybe_unused]]static auto _(sep = ',');
          };
 
-    return (out << ... << (sep_out(), a)) << '}';
+    return (out << ... << (sep_out(), xs)) << '}';
   });
 }
-
-int main()
-{
-    std::cout << std::boolalpha << tupl_API();
-}
-// Outputs nested tupl return value: {{4,5,6},true}.
 ```
-
-### `tuplish` types
 
 The `tuplish` concept requires a member typedef `tupl_t` on which a  
 `map` function is defined. Prior to calling `map`, the `as_tupl_t(t)` cast  
 assures that the embedded type is used for lookup.
 
-`tupl` is intended by design to be used as a base class for other tuplish  
-types that extend its API by adding constructors or member functions  
-(but not member data; the `tupl` base should hold all data members).
+The simpler fold expression `(out << ... << xs)` unrolls as  
+`(out << t.x0 << t.x1 << t.x2)` to output each element in turn  
+(the `sep_out` function uses a 'cute' trick to update the separator `char`  
+`sep` from open-brace '`{`' to comma '`,`' as a side effect of its first call).
 
-Deriving from `tupl` automatically makes the derived type `tuplish`,  
-gaining tuple access for free.
+Here it is in use:
 
-`tupl` is primarily a value type, i.e. it is meant to hold values.  
-The `tupl` CTAD guide deduces element types by-value.
+```c++
+extern auto tupl_API(); // From the earlier snippet
 
-As a generic base, though, `tupl` element types are unconstrained so it  
-may hold lvalue references, rvalue references or even function references.
+int main()
+{
+    std::cout << std::boolalpha << tupl_API();
+}
+```
 
-Besides `tupl` and `lupl`, the library provides three derived `tuplish` types;
-
-* `ties`, `cmps` and `vals`
-
-`ties` is specialized for tuples of references.
+This prints the nested tupl return value `{{4,5,6},true}`  
+(of the `tupl_API` function sketched above).
 
 ## `ties` introduction
 
@@ -465,12 +753,12 @@ A type is *structural* if it can be used as a non-type template parameter:
 ## Layout
 
 **`tupl`** layout has `[[no_unique_address]]` attribute on all members.  
-**`lupl`** is a 'layout compatible' tupl without `[[no_unique_address]]`.
+**`lupl`** is a 'layout-compatible' tupl without `[[no_unique_address]]`.
 
 Don't use `tupl` in multi-platform external APIs - **it isn't portable**.  
 Instead, use `lupl` where portable standard layout is required.  
 
-`lupl` is layout compatible with an equivalent struct aggregate.  
+`lupl` is layout-compatible with an equivalent struct aggregate.  
 It's safe to reinterpret_cast a struct to a lupl for tuple-like access;  
 `std::is_layout_compatible` provides the required check:
 
