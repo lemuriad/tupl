@@ -200,8 +200,8 @@ inline constexpr int type_pack_indexof = [] {
   static_assert(sizeof...(E) > 0, "type_pack_indexof zero-size pack");
   static_assert((std::same_as<X,E> + ...) == 1,
     "type_pack_indexof error: pack must have a single matching type");
-  int k=0, r=-1;
-  return ((std::same_as<X,E> && r<0 ? r=k : ++k),...), r;
+  int r{};
+  return (..., (r += r || std::same_as<X,E>)), sizeof...(E) - r;
 }();
 
 // type_list_indexof<X,TL> Index of element of type X in type list TL
