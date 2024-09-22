@@ -218,13 +218,13 @@ inline constexpr int type_list_indexof<X,L<E...>>
 //
 namespace impl {
 //
-template <
+template <std::size_t I,
   typename X0=void,typename X1=void,typename X2=void,typename X3=void,
   typename X4=void,typename X5=void,typename X6=void,typename X7=void,
   typename X8=void,typename X9=void,typename Xa=void,typename Xb=void,
   typename Xc=void,typename Xd=void,typename Xe=void,typename Xf=void,
   typename...T>
-constexpr auto type_pack_element_t = []<size_t I>()
+constexpr auto type_pack_element_v()
 {
   switch (I)
   {
@@ -244,12 +244,10 @@ constexpr auto type_pack_element_t = []<size_t I>()
   case 0xd: if constexpr (I==0xd) return std::type_identity<Xd>{};
   case 0xe: if constexpr (I==0xe) return std::type_identity<Xe>{};
   case 0xf: if constexpr (I==0xf) return std::type_identity<Xf>{};
-  default: if constexpr (I>=0x10) return type_pack_element_t<T...>.
-                                         template operator()<I-0x10>();
+  default: if constexpr (I>=0x10) return type_pack_element_v<I-0x10,T...>();
   }
 };
-#define TYPEPACKEL typename decltype(impl::type_pack_element_t<E...>\
-.template operator()<I>())::type; // I,E... are 'baked in'
+#define TYPEPACKEL typename decltype(impl::type_pack_element_v<I,E...>())::type;
 } // impl
 
 #endif
