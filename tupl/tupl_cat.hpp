@@ -95,12 +95,12 @@ constexpr auto tupl_init(auto&&...v) noexcept(
 template <tuplish...TL>
 constexpr auto cat(TL&&...tl) noexcept(
  (std::is_nothrow_constructible_v<std::remove_cvref_t<TL>,TL&&> && ...))
- -> cat_t<tupl_t<TL>...>
+ //-> cat_t<tupl_t<TL>...>
  requires(std::is_constructible_v<std::remove_cvref_t<TL>,TL&&> && ...)
 {
   return [&]<auto...ij>(val_seq<ij_t,ij...>) noexcept(
  (std::is_nothrow_constructible_v<std::remove_cvref_t<TL>,TL&&> && ...))
- -> cat_t<tupl_t<TL>...>
+ //-> cat_t<tupl_t<TL>...>
   {
     return tupl_init<tupl,type_list_element_t<ij.j, std::remove_cvref_t<
                           type_list_element_t<ij.i, tupl<TL...>>>>...>
@@ -115,14 +115,14 @@ template <template<typename...>class X, tuplish...TL>
 constexpr auto cat(TL&&...tl) noexcept(
   (std::is_nothrow_constructible_v<cat_ctad_t<X,TL&&>,
                 apply_cvref_t<TL&&,cat_ctad_t<X,TL&&>>> && ...))
- -> cat_ctad_t<X,TL&&...>
+ //-> cat_ctad_t<X,TL&&...>
  requires (std::is_constructible_v<cat_ctad_t<X,TL&&>,
                 apply_cvref_t<TL&&,cat_ctad_t<X,TL&&>>> && ...)
 {
   return [&]<auto...ij>(val_seq<ij_t,ij...>) noexcept(
      (std::is_nothrow_constructible_v<cat_ctad_t<X,TL&&>,
                    apply_cvref_t<TL&&,cat_ctad_t<X,TL&&>>> && ...))
-    -> cat_ctad_t<X,TL&&...>
+    //-> cat_ctad_t<X,TL&&...>
   {
     return tupl_init<X>(get<ij.j>(get<ij.i>(fwds{(TL&&)tl...}))...);
   }
