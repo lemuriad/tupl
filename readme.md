@@ -2,7 +2,7 @@
 
 ## Minimal C++20 tuples, traits and tools
 
-<details><summary>Copyright &copy; 2023 The Lemuriad.
+<details><summary>Copyright &copy; 2024 The Lemuriad.
 Distributed under BSL V1.0</summary>
 
 ### **Boost Software License** - Version 1.0 - August 17th, 2003
@@ -39,7 +39,7 @@ Also at [boost.org](http://www.boost.org/LICENSE_1_0.txt) and accompanying file 
 
 <table style="width: 100%; border: none;" cellspacing="0" cellpadding="0" border="0">
   <tr>
-    <td><a href="https://github.com/Lemurian-Labs/tupl/actions/workflows/ci.yml"><img alt="GitHub Actions Badge" src="../../actions/workflows/ci.yml/badge.svg"></a></td>
+    <td><a href="https://github.com/lemuriad/tupl/actions/workflows/ci.yml"><img alt="GitHub Actions Badge" src="../../actions/workflows/ci.yml/badge.svg"></a></td>
     <td>GHA meson build: linux gcc 12, clang 14, MSVC latest</td>
   </tr>
 </table>

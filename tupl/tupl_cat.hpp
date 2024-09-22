@@ -1,3 +1,8 @@
+/*
+ SPDX-FileCopyrightText: 2024 The Lemuriad <wjwray@gmail.com>
+ SPDX-License-Identifier: BSL-1.0
+ Repo: https://github.com/Lemuriad/tupl
+*/
 #include "index_sequences.hpp"
 #include "tupl.hpp"
 

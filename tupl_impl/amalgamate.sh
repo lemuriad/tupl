@@ -16,7 +16,7 @@ This bash script generates single header include "tupl_amalgam.hpp".
 fi
 
 echo "/*
- SPDX-FileCopyrightText: 2023 The Lemuriad <opensource@lemurianlabs.com>
+ SPDX-FileCopyrightText: 2024 The Lemuriad <wjwray@gmail.com>
  SPDX-License-Identifier: BSL-1.0
  Repo: https://github.com/Lemuriad/tupl
 
