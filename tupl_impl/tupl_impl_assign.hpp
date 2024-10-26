@@ -51,13 +51,9 @@ struct assign_to<Lr>
     enum:bool{ X = types_all<is_lval_nothrow_assignable,L,tupl_t<R>> };
     if constexpr (tupl_tie<L>)
       // copy or move assign according to RHS element reference types
-      [&]<template<typename...>class W
-         ,typename...U>(W<U...>const& r) noexcept(X)
-      {
-        map(r, [&](auto&...u) noexcept(X) {
-          assign_elements(l, (U)u...);
-        });
-      }(static_cast<tupl_t<R>const&>(r));
+      map(as_tupl_t(r), [&](auto&&...u) noexcept(X) {
+        assign_elements(l, (decltype(u))u...);
+      });
     else
       // copy or move assign all elements decided by RHS reference type
       map(as_tupl_t((R&&)r), [&](auto&&...u) noexcept(X)
