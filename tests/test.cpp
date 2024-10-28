@@ -253,7 +253,7 @@ SAME( decltype(tupl{}), tupl<>);
 SAME( decltype(tupl{0}), tupl<int> );
 SAME( decltype(tupl{""}), tupl<char[1]> );
 SAME( decltype(tupl{&tie<int&>})
-             , tupl<const ties<int&>(*)(int&)noexcept>);
+             , tupl<ties<int&>(*)(int&)noexcept>);
              // function pointer
 SAME( decltype(tupl{std::make_unique<int>()})
              , tupl<std::unique_ptr<int>>);
@@ -516,12 +516,7 @@ void tupl_tie_assign()
   assert(ops[1] == copy_ass);
 
   clear(ops);
-  tie(x) = tie_fwd(std::move(x));
-  assert(ops[0] == 1);
-  assert(ops[1] == move_ass);
-
-  clear(ops);
-  tie_fwd(std::move(x)) = {std::move(x)};
+  tie(x) = fwds{std::move(x)};
   assert(ops[0] == 1);
   assert(ops[1] == move_ass);
 
@@ -540,7 +535,7 @@ void tupl_tie_assign()
   assert(ops[1] ==copy_ass);
 
   clear(ops);
-  tie(x,a) = tie_fwd(std::move(x),a);
+  tie(x,a) = fwds{std::move(x),a};
   assert(ops[0] == 1);
   assert(ops[1] == move_ass);
 }
@@ -557,15 +552,15 @@ bool test_refs()
   static_assert( std::is_trivially_copyable_v<ties<int>> );
 # endif
   ties<int&>{i} = ties<int&>{ii};
-static_assert( std::is_trivially_copyable_v<ties<int&>> );
- const ties<int&> ti{ i };
+  static_assert( ! std::is_trivially_copyable_v<ties<int&>> );
+  const ties<int&> ti{ i };
   const ties<int&> tii{ ii };
   ti = { 1 };
   tii = ti;
   tie(ii) = tie(i);
   swap(tii,ti);
   swap(tie(ii),tie(i));
-  SAME( decltype(ti), decltype(tie(i)) );
+  SAME( decltype(ti), const decltype(tie(i)) );
 
   long j, jj;
   char c, cc;
@@ -575,8 +570,8 @@ static_assert( std::is_trivially_copyable_v<ties<int&>> );
 
   ijc = {1,2L,'d'};  // assign-through
   auto& [x,y,z] = ijc;
-  //ijc = { x, y, z }; // ambiguous with deleted default assignment
-  as_const(ijc) = { x, y, z }; // const disambiguates
+  ijc = { x, y, z };
+  as_const(ijc) = { x, y, z };
 
   assert(x == 1 && y == 2 && z == 'd');
   assert(x == get<0>(ijc) && y == get<1>(ijc) && z == get<2>(ijc));
@@ -800,10 +795,71 @@ void tupl_cats()
   auto stt = cat<tupl>(ties{"str",str}); // reference -> value copy
   SAME( decltype(stt), tupl<char[4],char[4]> );
 
-  auto ttt = cat<ties>(stt, tupl{"str"}, ties{"str",str});
-  //wotype<decltype(ttt)> eh;
-  SAME( decltype(ttt), ties<
-    char(&)[4],char(&)[4],  char(&&)[4],  char const(&)[4], char(&)[4]> );
+  using C = char[4];
+
+  /********** ties of lvalue and rvalue references **********/
+
+  // tupl of lvalue reference isn't fully copyable or movable
+  static_assert( ! std::copyable< tupl<C&> >
+              && !  std::movable< tupl<C&> > );
+  // but it is copy_constructible, trivially
+  static_assert(std::copy_constructible< tupl<C&> > &&
+   std::is_trivially_copy_constructible< tupl<C&> >() );
+// ==
+  static_assert(std::move_constructible< tupl<C&> > );
+  static_assert(std::constructible_from< tupl<C&>,       tupl<C&>&      >
+             &&     std::convertible_to< tupl<C&>&,      tupl<C&>       >
+             && std::constructible_from< tupl<C&>,       tupl<C&>const& >
+             &&     std::convertible_to< tupl<C&>const&, tupl<C&>       >
+             && std::constructible_from< tupl<C&>,       tupl<C&>const  >
+             &&     std::convertible_to< tupl<C&>const,  tupl<C&>       >
+               );
+
+  // tupl of rvalue reference isn't copy constructible
+  static_assert(! std::copy_constructible< tupl<C&&> > );
+  // but is move_constructible, trivially
+  static_assert(  std::move_constructible< tupl<C&&> > &&
+     std::is_trivially_move_constructible< tupl<C&&> >() );
+  // and nothing else
+  static_assert(! std::constructible_from< tupl<C&&>,       tupl<C&&>&      >
+             && !     std::convertible_to< tupl<C&&>&,      tupl<C&&>       >
+             && ! std::constructible_from< tupl<C&&>,       tupl<C&&>const& >
+             && !     std::convertible_to< tupl<C&&>const&, tupl<C&&>       >
+             && ! std::constructible_from< tupl<C&&>,       tupl<C&&>const  >
+             && !     std::convertible_to< tupl<C&&>const,  tupl<C&&>       >
+               ) ;
+
+  /********** ties of lvalue and rvalue references **********/
+
+  // ties of lvalue reference is copy_constructible, trivially
+  static_assert(std::copy_constructible< ties<C&> > &&
+   std::is_trivially_copy_constructible< ties<C&> >() );
+
+  // but isn't copy_constructible or even move_constructible -
+  // its move constructor is default deleted
+  static_assert(! std::copy_constructible<ties<C&&>> );
+  static_assert(! std::move_constructible<ties<C&&>> );
+  // double check
+  static_assert(! std::constructible_from<ties<C&&>,ties<C&&>> );
+  static_assert(! std::is_constructible_v<ties<C&&>,ties<C&&>> );
+  // but can construct a tupl base from ties of rvalue ref
+  static_assert(std::is_constructible_v<tupl<C&&>,ties<C&&>> );
+
+
+  auto tiestr = ties{str};
+  [[maybe_unused]]ties<C&> tiestr2(tiestr);
+
+  auto tuplstref =tupl<C&>{str};
+  [[maybe_unused]]tupl<C&> tuplstref2(tuplstref);
+
+  ties tt{tuplstref};
+  SAME( decltype(tt), ties< C& > );
+
+  auto ttt = cat<fwds>(tupl{"str"});
+  SAME( decltype(ttt), fwds< C&& > );
+
+  ties tttt = cat<ties>(tiestr);
+  SAME( decltype(tttt), ties< C& > );
 };
 
 int main()

@@ -110,7 +110,7 @@ template <typename...E> cvals(E const&...) -> cvals<tupl_view_t<E>...>;
 #define MAYBE_UNUSED0()
 #endif
 
-#define MEMBER_FWDS(t) XREPEAT(VREPEAT_INDEX,t.TUPL_DATA_ID,COMMA)
+#define  MEMBER_ACCESSES(t) XREPEAT(VREPEAT_INDEX,t.TUPL_DATA_ID,COMMA)
 
 //
 template <XREPEAT(VREPEAT_INDEX,class TUPL_TYPE_ID,COMMA)>
@@ -123,13 +123,13 @@ struct TUPL_ID<XREPEAT(VREPEAT_INDEX,TUPL_TYPE_ID,COMMA)>
  friend auto operator<=>(TUPL_ID const&,TUPL_ID const&)
   NZREPEAT(requires types_all<is_member_default_3way,TUPL_ID>)= default;
  //
- template <same_ish<TUPL_ID> T, typename F, typename U = T&&>
- friend constexpr decltype(auto) map(MAYBE_UNUSED0()T&& t, F f)noexcept(
-  noexcept(f(MEMBER_FWDS(U(t)))))
-  { return f(MEMBER_FWDS(U(t))); }
+ template <same_ish<TUPL_ID> T, typename F>
+ friend constexpr decltype(auto) map(MAYBE_UNUSED0()T& t, F f)noexcept(
+  noexcept(f( MEMBER_ACCESSES(t))))
+  { return f( MEMBER_ACCESSES(t)); }
 };
 
-#undef MEMBER_FWDS
+#undef  MEMBER_ACCESSES
 #undef MAYBE_UNUSED0
 #undef NZREPEAT
 

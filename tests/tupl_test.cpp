@@ -191,12 +191,12 @@ using is_structural = structural<tupl{"tupl"}>;
 template <auto> using isstructural = std::true_type;
 static_assert(        isstructural< Tup{} >() );
 
-using tupl_scalar_refs = ties<int&, long&, char&>;
+using ties_scalar_refs = ties<int&, long&, char&>;
 
-static_assert( std::is_aggregate<tupl_scalar_refs>() );
-static_assert( std::is_trivially_copyable<tupl_scalar_refs>{});
-static_assert(!std::is_trivially_default_constructible<tupl_scalar_refs>());
-static_assert( MSVC(!) std::is_trivial_v<tupl_scalar_refs>);
+static_assert( std::is_aggregate<ties_scalar_refs>() );
+static_assert( ! std::is_trivially_copyable<ties_scalar_refs>{});
+static_assert( ! std::is_trivially_default_constructible<ties_scalar_refs>());
+static_assert( ! std::is_trivial_v<ties_scalar_refs>);
 
 #include <memory>
 #include <tupl/tupl_vals.hpp>
@@ -269,7 +269,7 @@ int main()
 
   vals<char[4],int> cppval; // uninitialized
   cppval = {cpp, std};      // two-phase init
-  cppval = lml::tie_fwd(cpp,'\x14');
+  cppval = lml::fwds{cpp,'\x14'};
 
   // two-phase init one-liner
   auto cppass = vals<char[4],int>{} = {cpp,std};

@@ -50,6 +50,22 @@ static_assert(false,"[[no_unique_address]] attribute is required");
 #endif
 #endif
 
+// Supress warning on deprecated implicitly-declared copy operator
+// deliberate in ties as ah aggregate but non-trivially-copyable type
+//
+#ifndef START_NO_WARN_DEPRECATED_COPY
+# if defined(__GNUC__)
+#  define START_NO_WARN_DEPRECATED_COPY()\
+_Pragma("GCC diagnostic push")\
+_Pragma("GCC diagnostic ignored \"-Wdeprecated-copy\"")
+#  define END_NO_WARN_DEPRECATED_COPY()\
+_Pragma("GCC diagnostic pop")
+# else
+#  define START_NO_WARN_DEPRECATED_COPY()
+#  define END_NO_WARN_DEPRECATED_COPY()
+# endif
+#endif
+
 // Supress noisy missing-braces warnings on Clang
 //
 #ifndef NO_WARN_MISSING_BRACES
