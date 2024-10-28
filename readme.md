@@ -621,35 +621,26 @@ This prints the nested tupl return value as `{{4,5,6},true}`
 
 * **`ties<Xs...>` : `tupl<Xs...>`** $+$ `operator=`
 
-The use case is reference-tuples.  
+The use case is as a tuple-of-references specialized for assignments.
+
 Tuples of references are used for:
 
-* Grouped, simultaneous assignment to multiple variables.
-* Forwarding of argument lists to functions.
-* Lexicographic comparison of lists of variables  
-(better handled by `cmps`).
+1. 'Collective assignment' to multiple variables.
+2. Forwarding of argument lists to functions.
+3. Lexicographic comparison of lists of variables.
 
-`ties` are trivially copyable so they can be cheap to pass around.
+In this library, each use case is best served by a specialized tupl-derived type.  
+(2.) is better handled by the `fwds` type
+(c.f.
+[`std::forward_as_tuple`](https://en.cppreference.com/w/cpp/utility/tuple/forward_as_tuple)).  
+(3.) is better handled by the`cmps` type
 
 A `tie` 'maker function' is the preferred way to make `ties`:
 
-* `tie(xs...)` $\rightarrow$ `ties<decltype(xs)&...> const`
+* `tie(xs...)` $\rightarrow$ `ties<decltype(xs)&...>`
 
 `tie` accepts only lvalues and deduces lvalues as assignment targets  
-and returns a const-qualified `ties`.
-
-`tie_fwd` forwards its `auto&&` arguments as lvalues or rvalues:
-
-* `tie_fwd(xs...)` $\rightarrow$ `ties<decltype(xs)...> const`
-
-(similar to
-[`std::forward_as_tuple`](https://en.cppreference.com/w/cpp/utility/tuple/forward_as_tuple)).
-
-### Why `const` ?
-
-The const qualifier removes the deleted default assignment operators from  
-consideration. The resulting const-qualified type satisfies *const-assignable*  
-concept, identifying it as an 'assign-through' reference type.
+and returns a `ties` tupl of lvalue references to its arguments.
 
 ----
 
@@ -689,11 +680,11 @@ However, it only handles all-move or all-copy assignments, not a mix.
 `ties` also admits assignments from other tuplish types:
 
 ```c++
-  lml::tie(cp,mv) = tie_fwd(cc, std::move(mm));
+  lml::tie(cp,mv) = lml::fwds{cc, std::move(mm)};
 ```
 
 Here, copy and move assignments are mixed by assigning from a  
-forwarding tuple that ties both lvalue and rvalue references.
+forwarding tuple that binds both lvalue and rvalue references.
 
 ----
 

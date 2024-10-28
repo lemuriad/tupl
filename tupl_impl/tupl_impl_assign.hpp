@@ -17,8 +17,8 @@ constexpr auto&& assign_elements(L&& l, T&&...v)
   swap(ta,tb) tupl swap specialization, includes const-assignable,
              (std::swap already handles possibly-nested C array)
 */
-template <tuplish L>
-constexpr void swap(L& l, L& r)
+template <tuplish L, same_ish<std::remove_cvref_t<L>> R>
+constexpr void swap(L&& l, R&& r)
   noexcept(types_all<std::is_nothrow_swappable, tupl_t<L>>)
   requires types_all<std::is_swappable, tupl_t<L>>
 {
@@ -60,7 +60,7 @@ struct assign_to<Lr>
       }(static_cast<tupl_t<R>const&>(r));
     else
       // copy or move assign all elements decided by RHS reference type
-      map(as_tupl_t((R&&)r), [&](auto&&...u) noexcept(X)
+      map(as_tupl_t(r), [&](auto&&...u) noexcept(X)
       {
           assign_elements(l, (decltype(u))(u)...);
       });
@@ -87,7 +87,7 @@ struct assign_to<Lr>
     noexcept(types_all<is_lval_nothrow_assignable,L,tupl_t<R>>)
     requires types_all<is_lval_assignable,L,tupl_t<R>>
   {
-    return assign_from((R&&)r);
+    return assign_from(r);
   }
 
   // move assign from braced init-list of rvalues; better match
