@@ -153,9 +153,9 @@ constexpr auto get(T&& t) noexcept
   return map(static_cast<tupl_like_t<T>&>(t), [](auto&...a) noexcept
     -> ret_t
   {
-    NO_WARN_MISSING_BRACES(
+    NO_WARN_MISSING_BRACES()
       return static_cast<ret_t>(*At{0,&a...,0}.e);
-    )
+    END_NO_WARN_MISSING_BRACES()
   });
 }
 

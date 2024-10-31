@@ -552,6 +552,10 @@ bool test_refs()
 {
   int i, ii;
   ties<int>{1} = ties<int>{0};
+ // TODO this conditional triviallity test fails on clang 14
+# if not defined(__clang__)
+  static_assert( std::is_trivially_copyable_v<ties<int>> );
+# endif
   ties<int&>{i} = ties<int&>{ii};
 static_assert( std::is_trivially_copyable_v<ties<int&>> );
  const ties<int&> ti{ i };

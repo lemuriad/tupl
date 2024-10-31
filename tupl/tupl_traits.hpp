@@ -196,11 +196,11 @@ using tupl_fwd_t = typename tupl_fwd<t>::type;
 // Fails with a static_assert if there's no X or multiple Xs in E...
 //
 template <typename X, typename...E>
-inline constexpr int type_pack_indexof = [] {
+inline constexpr auto type_pack_indexof = [] {
   static_assert(sizeof...(E) > 0, "type_pack_indexof zero-size pack");
   static_assert((std::same_as<X,E> + ...) == 1,
     "type_pack_indexof error: pack must have a single matching type");
-  int r{};
+  std::size_t r{};
   return (..., (r += r || std::same_as<X,E>)), sizeof...(E) - r;
 }();
 

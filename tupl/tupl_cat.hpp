@@ -10,25 +10,40 @@
 
 #include "namespace.hpp"
 
-// ctad_t<X,v> 'CTAD type'; the type that X{v{}} element 0 would have
-//             if X is a tuplish template id with value category CTAD
-//             and as if deduced array values initialize ok.
+namespace impl {
+
+// Helpers to compute concatenated tupl types
+
+// cat_elem_t<ij, tuplish...>: the jth type of the ith tupl argument
+//                             ij is a struct with {i,j} index members
 //
-template <template<typename...>class X, typename v>
-using ctad_t = copy_cvref_t<type_list_element_t<0,
-     decltype(X{std::declval<all_extents_removed_t<v>>()})>, v>;
+template <auto ij, tuplish...TL>
+using cat_elem_t = type_list_element_t<ij.j,
+                   type_pack_element_t<ij.i, TL...>>;
 
-namespace impl { // helpers to compute concatenated tupl types
-
+// cat_t<tuplish..., ij...>: the type of the concatenated tupl of tuplish...
+//                           given a list of ij indices of all elements
+//
 template <tuplish...TL, auto...ij>
-constexpr auto cat_t(val_seq<ij_t, ij...>)
-  -> tupl<type_list_element_t<ij.j,
-          type_list_element_t<ij.i, tupl<TL...>>>...>;
+auto cat_t(val_seq<ij_t, ij...>) -> tupl<cat_elem_t<ij,TL...>...>;
 
+// ctad_t<X,V>: the template argument type V' deduced by X's CTAD for an
+//              initializer of type V; X{declval<V>()} -> X<V'>
+//              Assumes same_as< remove_cvref<V>, remove_cvref<V'> >
+//
+// => X is a tuplish template X<T...> with CTAD that conserves value types
+// (unlike std::make_tuple which decays arguments and reference_wrappers).
+//
+template <template<typename...>class X, typename V>
+using ctad_t = copy_cvref_t<decltype(
+                 decltype(X{std::declval<all_extents_removed_t<V>>()})::x0
+                                    ), V>;
+
+// cat_ctad_t<X, tuplish..., ij...>: given a list of ij tupl element indices
+//               return the type of the concatenated tupl using X's CTAD
+//
 template <template<typename...>class X, tuplish...TL, auto...ij>
-constexpr auto cat_ctad_t(val_seq<ij_t, ij...>)
-  -> X<ctad_t<X,type_list_element_t<ij.j,
-                type_list_element_t<ij.i, tupl<TL...>>>>...>;
+auto cat_ctad_t(val_seq<ij_t,ij...>) -> X<ctad_t<X,cat_elem_t<ij,TL...>>...>;
 
 } // impl
 
@@ -60,20 +75,23 @@ template <template<typename...>class X = tupl, typename...T>
 constexpr auto tupl_init(auto&&...v)
             noexcept((is_nothrow_constructible_v<T,decltype(v)> && ...))
   -> X<T...>
-            requires (sizeof...(T) == sizeof...(v))
+            requires (sizeof...(T) == sizeof...(v)
+                      && (is_constructible_v<T,decltype(v)> && ...))
 {
+  // if aggregate initialization works then use it
   if constexpr (requires {X<T...>{(decltype(v))v...};})
-    return {(decltype(v))v...}; // no arrays present, aggregate init
+    return {(decltype(v))v...};
 
-  else // expand array elements in brace-elided aggregate initializers
-
+  // else there are array-valued arguments that fail to initialize
+  else
     return [&]<auto...ij>(val_seq<ij_t, ij...>)
             noexcept((is_nothrow_constructible_v<T,decltype(v)> && ...))
           -> X<T...>
     {
-      NO_WARN_MISSING_BRACES(
+      // Aggregate initialize with arrays expanded as flat lists of elements
+      NO_WARN_MISSING_BRACES() // Clang warns of brace-elided initialization
       return {flat_index(get<ij.i>(fwds{(decltype(v))v...}),ij.j)...};
-      )
+      END_NO_WARN_MISSING_BRACES()
     }(ij_seq<flat_size<std::remove_cvref_t<T>>...>{});
 }
 /*
@@ -82,29 +100,28 @@ constexpr auto tupl_init(auto&&...v)
 */
 template <template<typename...>class X = tupl, typename...T>
 constexpr auto tupl_init(auto&&...v) noexcept(
-     noexcept(tupl_init<X,ctad_t<X,decltype(v)>...>((decltype(v))v...)))
-  -> X<ctad_t<X,decltype(v)>...>
+     noexcept(tupl_init<X,impl::ctad_t<X,decltype(v)>...>((decltype(v))v...)))
+  -> X<impl::ctad_t<X,decltype(v)>...>
     requires (sizeof...(T) == 0 && sizeof...(v) != 0 &&
-    requires{tupl_init<X,ctad_t<X,decltype(v)>...>((decltype(v))v...);})
+    requires{tupl_init<X,impl::ctad_t<X,decltype(v)>...>((decltype(v))v...);})
 {
-  return tupl_init<X,ctad_t<X,decltype(v)>...>((decltype(v))v...);
+  return tupl_init<X,impl::ctad_t<X,decltype(v)>...>((decltype(v))v...);
 }
 
 // cat(t...) concatenate tuplish t's preserving element types (no CTAD)
 //
 template <tuplish...TL>
-constexpr auto cat(TL&&...tl) noexcept(
- (std::is_nothrow_constructible_v<std::remove_cvref_t<TL>,TL&&> && ...))
- //-> cat_t<tupl_t<TL>...>
- requires(std::is_constructible_v<std::remove_cvref_t<TL>,TL&&> && ...)
+constexpr auto cat(TL&&...tl)
+ noexcept((std::is_nothrow_constructible_v<tupl_t<TL>,tupl_like_t<TL>> && ...))
+ -> cat_t<tupl_t<TL>...>
+ requires(std::is_constructible_v<tupl_t<TL>,tupl_like_t<TL>> && ...)
 {
-  return [&]<auto...ij>(val_seq<ij_t,ij...>) noexcept(
- (std::is_nothrow_constructible_v<std::remove_cvref_t<TL>,TL&&> && ...))
+  return [&]<auto...ij>(val_seq<ij_t,ij...>)
+   noexcept((std::is_nothrow_constructible_v<tupl_t<TL>,tupl_like_t<TL>>&&...))
  //-> cat_t<tupl_t<TL>...>
   {
-    return tupl_init<tupl,type_list_element_t<ij.j, std::remove_cvref_t<
-                          type_list_element_t<ij.i, tupl<TL...>>>>...>
-                         (get<ij.j>(get<ij.i>(fwds{(TL&&)tl...}))...);
+    return tupl_init<tupl, impl::cat_elem_t<ij, tupl_t<TL>...>...>
+                      (get<ij.j>(get<ij.i>(fwds{(TL&&)tl...}))...);
   }
   (ij_seq<tupl_size_v<TL>...>{});
 }
@@ -115,7 +132,7 @@ template <template<typename...>class X, tuplish...TL>
 constexpr auto cat(TL&&...tl) noexcept(
   (std::is_nothrow_constructible_v<cat_ctad_t<X,TL&&>,
                 apply_cvref_t<TL&&,cat_ctad_t<X,TL&&>>> && ...))
- //-> cat_ctad_t<X,TL&&...>
+ -> cat_ctad_t<X,TL&&...>
  requires (std::is_constructible_v<cat_ctad_t<X,TL&&>,
                 apply_cvref_t<TL&&,cat_ctad_t<X,TL&&>>> && ...)
 {
