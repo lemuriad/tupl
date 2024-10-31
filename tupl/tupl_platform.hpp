@@ -54,19 +54,21 @@ static_assert(false,"[[no_unique_address]] attribute is required");
 //
 #ifndef NO_WARN_MISSING_BRACES
 # if defined(__clang__)
-#  define NO_WARN_MISSING_BRACES(...)\
+#  define NO_WARN_MISSING_BRACES()\
 _Pragma("GCC diagnostic push")\
-_Pragma("GCC diagnostic ignored \"-Wmissing-braces\"")\
-__VA_ARGS__ \
+_Pragma("GCC diagnostic ignored \"-Wmissing-braces\"")
+#  define END_NO_WARN_MISSING_BRACES()\
 _Pragma("GCC diagnostic pop")
 # else
-#  define NO_WARN_MISSING_BRACES(...)__VA_ARGS__
+#  define NO_WARN_MISSING_BRACES()
+#  define END_NO_WARN_MISSING_BRACES()
 # endif
 #endif
 
 #else // UNDEFINE
 
 #undef NO_WARN_MISSING_BRACES
+#undef END_NO_WARN_MISSING_BRACES
 #undef TYPEPACKEL
 
 #undef NUA
