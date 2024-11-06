@@ -9,6 +9,10 @@
 #define REMOVE_CVREF_T(...) std::remove_cv_t<REMOVE_REF_T(__VA_ARGS__)>
 #endif
 
+// type_list
+//
+template <typename...> struct type_list;
+
 // completeness test
 template <typename T, typename = void>
   std::false_type complete;

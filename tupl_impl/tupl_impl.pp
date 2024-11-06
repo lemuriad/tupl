@@ -55,6 +55,15 @@ template<typename...E>inline constexpr bool is_lupl_v<lupl<E...>>{true};
 //
 template<typename T>
 concept tupl_or_lupl = is_tupl_v<tupl_t<T>> || is_lupl_v<tupl_t<T>>;
+//
+template <typename...E> struct vals;
+template <typename...E> vals(E const&...) -> vals<E...>;
+//
+template <typename...E> struct ties;
+template <typename...E> ties(E&...) -> ties<E&...>;
+//
+template <typename...E> struct cmps;
+template <typename...E> cmps(E const&...) -> cmps<tupl_view_t<E>...>;
 /*
    Derived tuplish types with custom CTAD only, nothing else added
 */
