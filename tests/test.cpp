@@ -480,7 +480,7 @@ void tupl_tie_assign()
 
   // initialize an array value member from an array lvalue
   constexpr int ca2[2]{1,2};
-  constexpr auto arrayinit = tupl(vals<int[2]>{} = {ca2});
+  constexpr auto arrayinit = tupl_init(ca2);
   static_assert( arrayinit == tupl<int[2]>{{1,2}} );
 
   static int ops[16]{};
@@ -851,9 +851,6 @@ void tupl_cats()
 
   auto tuplstref =tupl<C&>{str};
   [[maybe_unused]]tupl<C&> tuplstref2(tuplstref);
-
-  ties tt{tuplstref};
-  SAME( decltype(tt), ties< C& > );
 
   auto ttt = cat<fwds>(tupl{"str"});
   SAME( decltype(ttt), fwds< C&& > );

@@ -93,14 +93,6 @@ template <template <typename...> class L, typename...T,
   requires (sizeof...(T) == sizeof...(U))
 inline constexpr bool types_all<P,L<T...>,R<U...>> = (P<T,U>() && ...);
 
-//static_assert(types_all<std::is_fundamental, int>);
-
-template <typename...E>
-concept move_assignable = (is_move_assignable_v<E> && ...);
-
-template <typename...E>
-concept copy_assignable = (is_copy_assignable_v<E> && ...);
-
 template <typename L, typename R>
 using is_lval_assignable = is_assignable<L&,R>;
 

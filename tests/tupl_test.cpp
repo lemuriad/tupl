@@ -28,14 +28,12 @@ struct tstring : decltype(s) {
   consteval tstring() : decltype(s)(s) {}
 };
 
-//using dmr = tstring<{"DMR"}>;
-
-//static_assert( dmr{} == lml::tupl{"DMR"} );
-
 lml::tupl t0;
 static_assert( std::same_as<decltype(t0),lml::tupl<>> );
 
 constexpr lml::tupl t012 = {0,1U,"2"};
+
+#include <tupl/tupl_tie.hpp>
 
 auto tupl_API(lml::tupl<int,unsigned,char[2]> t = t012)
 {
@@ -73,9 +71,9 @@ auto tupl_API(lml::tupl<int,unsigned,char[2]> t = t012)
 //get<2>(t) = {"3"}; // FAIL: can't assign arrays
 
   lml::assign(get<2>(t)) = {"3"}; // array assign
-/*
+
   getie<2>(t) = {"3"}; // From <tupl/tupl_tie.hpp>
-*/
+
   using lml::flat_index; //(1st array elem& or arg&)
 
   // This map adds 3 to each element of tupl t:
@@ -88,8 +86,11 @@ auto tupl_API(lml::tupl<int,unsigned,char[2]> t = t012)
 
 //static_assert( sizeof(tupl_API()) == 16 ); // GCC = 12
 
+#include <utility>
+
 #include <tupl/tupl_tie.hpp>  // ties operator= overloads
 #include <tupl/tupl_cmps.hpp> // cmps operator== & <=>
+#include <tupl/tupl_cat.hpp>
 
 bool tie_API(int i, unsigned u, char(&c2)[2])
 {
@@ -98,10 +99,9 @@ bool tie_API(int i, unsigned u, char(&c2)[2])
   z = z && lml::tie(i,u,c2) == lml::cmps{0,0U,"\0"};
   z = z && lml::tie(i,u,c2) == lml::cmps{{}};
 
-  lml::ties refs = {i,u,c2}; // non-const qualified
-// refs = {i,u,c2}; // error: ambiguous overload
-  using as_const = decltype(refs) const&;
-  (as_const)refs = {i,u,c2};
+  lml::ties refs = {i,u,c2};
+  refs = {i,u,c2};
+  std::as_const(refs) = {i,u,c2};
 
   lml::tie(i,u,c2) = {}; // clear all to ={} init
   lml::tie(i,u,c2) = {1,2,"3"}; // assign-through
@@ -109,6 +109,13 @@ bool tie_API(int i, unsigned u, char(&c2)[2])
 
   getie<2>(refs) = {"5"};   // assign to array element
   getie<0,1>(refs) = {3,4}; // multi-index get -> tie
+
+  lml::tupl tup{0,1u,"2"};
+  geties(tup) = {1,2u,"3"}; // assign tupl via ties
+  getie<>(tup) = {};
+
+  static_assert(std::same_as<decltype(geties(tup))
+                            ,decltype(cat<lml::ties>(tup))>);
 
   return z;
 }
@@ -204,11 +211,16 @@ static_assert( ! std::is_trivial_v<ties_scalar_refs>);
 auto tup_copy_assign(char(&cstr)[4],bool b)
 {
   vals<char[4],bool> rupl = {"c++",true};
+  rupl = {cstr,b};
   rupl = {std::move(cstr),std::move(b)};
-//  assign_to{tup} = {cstr,b}; // error: no match for ‘operator=’
+
+  //tup = {cstr,b}; // FAIL to initialize RHS Tupl type from array lvalue
+  tup = tupl_init<vals>(cstr,b);
+  assign_to{tup} = {cstr,b};
   assign_elements(tup, cstr,b);
   assign(tup) = tie(cstr,b);
-  return tup = (vals<char[4],bool>{} = {cstr,b});
+  assign(tup) = {cstr,b};
+  return tup;
 }
 
 #include <iostream>
@@ -227,8 +239,6 @@ ostream& operator<<(ostream& out, tuplish auto const& t)
     return (out << ... << (sep_out(), a)) << '}';
   });
 }
-
-#include <tupl/tupl_cat.hpp>
 
 void catr()
 {
@@ -272,7 +282,7 @@ int main()
   cppval = lml::fwds{cpp,'\x14'};
 
   // two-phase init one-liner
-  auto cppass = vals<char[4],int>{} = {cpp,std};
+  auto cppass = tupl_init(cpp,std);
   assert( cppass == cppxx );
   cppass = cppxx;
 
