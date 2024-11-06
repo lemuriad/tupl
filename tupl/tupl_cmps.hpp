@@ -41,9 +41,10 @@ template <typename...E> struct cmps : tupl<E...>
     return equals(r,{});
   }
 };
+
 // cmps CTAD
-//
-template <typename...E> cmps(E const&...) -> cmps<tupl_view_t<E>...>;
+// (forward declared)
+//template <typename...E> cmps(E const&...) -> cmps<tupl_view_t<E>...>;
 
 #include "namespace.hpp"
 

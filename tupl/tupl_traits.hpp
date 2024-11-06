@@ -31,11 +31,12 @@ using tupl_like_t = copy_cvref_t<Tupl,tupl_t<Tupl>>;
 // Here, implicit conversion T -> tupl_t is tested by reference binding
 // and a void functor is used to test for presence of a map function
 //
+namespace impl {
 constexpr auto tuplish_void_fn = [](auto&&...){};
-
+}
 template <typename T>
 concept tuplish = requires (T& v) {
-  {map(tupl_like_t<T&>(v), tuplish_void_fn)} -> std::same_as<void>;
+  {map(tupl_like_t<T&>(v), impl::tuplish_void_fn)} -> std::same_as<void>;
 };
 
 // as_tupl_t(tup) cast to tupl_like_t (fwd the arg for value category)
@@ -54,10 +55,6 @@ inline constexpr bool is_typelist_v<L<T...>> = true;
 
 template <typename TL>
 concept typelist = is_typelist_v<TL>;
-
-// type_list
-//
-template <typename...> struct type_list {};
 
 // type_list_size_v<T> the number of elements E in type list T = L<E...>
 //
@@ -92,12 +89,6 @@ template <template <typename...> class L, typename...T,
           template <typename...> class P>
   requires (sizeof...(T) == sizeof...(U))
 inline constexpr bool types_all<P,L<T...>,R<U...>> = (P<T,U>() && ...);
-
-template <typename L, typename R>
-using is_lval_assignable = is_assignable<L&,R>;
-
-template <typename L, typename R>
-using is_lval_nothrow_assignable = is_nothrow_assignable<L&,R>;
 
 // non_narrow_assignable<T> 'uniform' aggregate assignment property
 //
