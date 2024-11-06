@@ -15,20 +15,21 @@
   ties<E...> : tupl<E...>
   ==========
   'ties' is a tupl-derived type for performing 'collective assignments'
-  through a tupl-of-references via a set of custom operator= overloads
-  designed to mimic 'aggregate assignment' of tupls of values.
+  through a tupl of references via a set of custom operator= overloads
+  designed to mimic 'aggregate assignment' of tupls of values and also
+  extend it to admit heterogeneous assignments.
 
   lml::ties is used as a temporary 'assignment wrapper' on the LHS of
-  assignment operations from a tupl or braced-list of values on the RHS.
+  assignments from a tupl, or braced init-list, of values on the RHS.
 
   lml::ties is not trivially copyable but remains an aggregate type.
-  While ties can be stored in arrays and used in algorithms, reference-
-  semantics is problematic so such advanced usage is not recommended.
+  While it can be stored in arrays and used in algorithms, reference-
+  semantics is often problematic so this usage is not recommended.
 
   lml::tie(a,b) -> lml::ties<A&,B&>{a,b}
   =============
-  The lml::tie function returns lml::ties of references to its arguments
-  and is used on the LHS of assignments as follows:
+  Similar to std::tie, the lml::tie function returns lml::ties as a tupl
+  of references to its arguments. It is used on the LHS of assignments:
 
     int a;
     std::string b, c="two";
@@ -36,7 +37,12 @@
     lml::tie(a,b) = {1,"one"};
     lml::tie(a,b) = {2,std::move(c)};
 
-  This enforces transient lifetime following an idiom set by std::tie.
+  This enforces transient lifetime following the idiom set by std::tie.
+
+  geties(tuplish) -> lml::ties{get<0>(tuplish), get<1>(tuplish)...}
+  ===============
+  The geties function returns a ties-tupl of references to the elements
+  of its tuplish argument. Equivalent to cat<lml::ties>(tuplish)
 
   getie<I...>(tuplish) -> lml::ties{get<I>(tuplish)...}
   ====================
@@ -60,9 +66,10 @@
   std <tuple> has no equivalent of getie<I...>(tuple)
 */
 
-// lml::ties intentionally leaves the copy constructor implicit in order
-// to remain an aggregate type.
-// Clang warns about this by default so the warning must be silenced.
+// lml::ties, in order to remain an aggregate type, has to leave the
+// copy constructor implicit =default despite defining copy assignment.
+// Clang warns about this, because it is specified as deprecated,
+// so the warning must be silenced:
 NO_WARN_DEPRECATED_COPY()
 // warning: definition of implicit copy constructor for ties<E...> is
 // deprecated because it has a user-declared copy assignment operator
@@ -80,6 +87,7 @@ NO_WARN_DEPRECATED_COPY()
 
   2  operator=(tuplish) const  move or copy-assign from other tuplish
                                based on ref quals of RHS types
+                               allows non-narrowing conversions only
 
   3a operator=({rvals}) const  move-assigns from init-list of rvalues
   3b operator=({lvals}) const  copy-assigns from init-list of lvalues
@@ -89,7 +97,7 @@ NO_WARN_DEPRECATED_COPY()
 
   Only overload 2 can perform mixed copy or move assignments but it
   cannot accept braced init-list RHS (because it deduces its type).
-  Overloads 3a & 3b perform all move or all copy from braced init-lists
+  Overloads 3a, 3b perform all-move or all-copy from braced init-lists
   with moves preferred if all initializers are rvalues.
 */
 
@@ -116,20 +124,24 @@ template <typename...E> struct ties : tupl<E...>
   template <typename...>
   constexpr void operator=(tupl_move_t<ties> r) const
     noexcept(noexcept(assign_from(r)))
-    requires (tupl_tie<ties> && move_assignable<E...>)
+    requires (tupl_tie<ties>
+              && (is_move_assignable_v<E> && ...))
   { assign_from(r); }
 
   // assign ties = tupl_view, from init-list of lvalues; copy is worse match
   template <typename A = tupl_view_t<ties>, typename B = A>
   constexpr void operator=(A const& r) const
     noexcept(noexcept(assign_from(r)))
-    requires(std::same_as<A,B>&& tupl_tie<ties>&& copy_assignable<E...>)
+    requires(tupl_tie<ties>
+             && std::same_as<A,B> // tie break against tupl_move_t
+             && (is_copy_assignable_v<E> && ...))
   { assign_from(r); }
 
   // assign this = {}, assignment from empty list for each element
   constexpr void operator=(std::true_type) const
     noexcept((is_nothrow_empty_list_assignable<E>() && ...))
-    requires (tupl_tie<ties> && (empty_list_assignable<E> && ...))
+    requires (tupl_tie<ties>
+              && (empty_list_assignable<E> && ...))
   {
     map(as_tupl_t(*this),
         [](auto&...t) noexcept((is_nothrow_empty_list_assignable<E>() && ...))
@@ -159,10 +171,6 @@ END_NO_WARN_DEPRECATED_COPY()
 //
 template <typename...E> ties(E&...) -> ties<E&...>;
 
-// ties CTAD from tupl base class
-//
-template <typename...E> ties(tupl<E&...>) -> ties<E&...>;
-
 //
 // tie(a...) -> ties<decltype(a)&...>{a...}; rejects rvalue arguments
 //
@@ -173,12 +181,19 @@ constexpr auto tie(T&...t) noexcept -> ties<T&...>
 }
 
 //
+// geties(tupl) -> tie(get<0>(tupl), get<1>(tupl)...)
+//
+constexpr auto geties(tuplish auto& t) noexcept
+{
+  return map(as_tupl_t(t), [](auto&...a){return ties{a...};});
+}
+
+//
 // getie<I...>(tupl) -> tie(get<I>(tupl)...)
 //
 template <unsigned...I>
-constexpr auto getie(tuplish auto&& t) noexcept
-  -> ties<decltype(get<I>((decltype(t))t))...> const
-     requires ((I < tupl_size_v<decltype(t)>) && ...)
+constexpr auto getie(tuplish auto& t) noexcept -> ties<decltype(get<I>(t))...>
+     requires ((I < tupl_size_v<tupl_t<decltype(t)>>) && ...)
 {
   return {get<I>((decltype(t))t)...};
 }
