@@ -270,9 +270,14 @@ int main()
   int std = 20;
 //cppstd = {cpp, }; // FAIL: array lvalue won't init
 
-  assign(cppstd) = {cpp, 20}; // works
+  assign(cppstd) = {cpp, 20}; // works, via ties wrapper
+  geties(cppstd) = {cpp, 20}; // same, but without wrapper
+  auto cppxx = cppstd;
 
-  auto cppxx = assign(tupl<char[4],int>{}) = {cpp,std};
+  static_assert(assign_toable<tupl<char[4],int>&>);
+  static_assert(! assign_toable<tupl<char[4],int>>);
+  static_assert(! assign_toable<tupl<char[4],int>&&>);
+
   auto cppyy = lml::tupl_init(cpp,std);
   assert( cppxx == cppyy );
   cppxx = cppyy;

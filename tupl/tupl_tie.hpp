@@ -168,8 +168,8 @@ template <typename...E> struct ties : tupl<E...>
 END_NO_WARN_DEPRECATED_COPY()
 
 // ties CTAD, deduces lvalue references
-//
-template <typename...E> ties(E&...) -> ties<E&...>;
+// (forward declared)
+//template <typename...E> ties(E&...) -> ties<E&...>;
 
 //
 // tie(a...) -> ties<decltype(a)&...>{a...}; rejects rvalue arguments
@@ -197,6 +197,21 @@ constexpr auto getie(tuplish auto& t) noexcept -> ties<decltype(get<I>(t))...>
 {
   return {get<I>((decltype(t))t)...};
 }
+
+//
+template <tuplish t>
+using tupl_ties_t = decltype(geties(std::declval<t&>()));
+
+/*
+  assign_to<tupl> customization for ties-extended tuplish assignment
+                  enables assign(tupl) -> assign_to<tupl>
+*/
+template <tuplish T>
+struct assign_to<T&> : tupl_ties_t<T>
+{
+  using tupl_ties_t<T>::operator=;
+  constexpr assign_to(T& t) : tupl_ties_t<T>{geties(t)} {}
+};
 
 #include "namespace.hpp"
 
