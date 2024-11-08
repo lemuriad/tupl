@@ -78,8 +78,8 @@ template <typename...E> struct vals : tupl<E...>
 };
 
 // vals CTAD, deduce all by-value including arrays with no decay
-//
-template <typename...E> vals(E const&...) -> vals<E...>;
+// (forward-declared)
+//template <typename...E> vals(E const&...) -> vals<E...>;
 
 #include "namespace.hpp"
 
