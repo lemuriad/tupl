@@ -30,55 +30,8 @@
 
 //
 inline constexpr size_t tupl_max_arity = HEXLIT(TUPL_MAX_ARITY);
-/*
-   tupl<E...> primary template declaration; an aggregate struct
-   with [[no_unique_address]] attribute on all element member decls E...
-*/
-template <typename...E> struct tupl;  // aggregate [[no_unique_address]]
-/*
-   tupl CTAD deduces elements by-value, including arrays (and functions)
-*/
-template <typename...E> tupl(E const&...) -> tupl<E...>;
-//
-template<typename T>  inline constexpr bool is_tupl_v = false;
-template<typename...E>inline constexpr bool is_tupl_v<tupl<E...>>{true};
-//
-template<typename T>  inline constexpr bool is_lupl_v = false;
-#if !defined(NO_LUPL) // lupl defined unless NO_LUPL symbol is #defined
-/*
-   lupl<E...> 'layout compatible' tupl without [[no_unique_address]]
-*/
-template <typename...E> struct lupl;  // aggregate, layout-compatibility
-template <typename...E> lupl(E const&...) -> lupl<E...>;
-template<typename...E>inline constexpr bool is_lupl_v<lupl<E...>>{true};
-#endif
-//
-template<typename T>
-concept tupl_or_lupl = is_tupl_v<tupl_t<T>> || is_lupl_v<tupl_t<T>>;
-//
-template <typename...E> struct vals;
-template <typename...E> vals(E const&...) -> vals<E...>;
-//
-template <typename...E> struct ties;
-template <typename...E> ties(E&...) -> ties<E&...>;
-//
-template <typename...E> struct cmps;
-template <typename...E> cmps(E const&...) -> cmps<tupl_view_t<E>...>;
-/*
-   Derived tuplish types with custom CTAD only, nothing else added
-*/
-template <typename...E> struct fwds  : tupl<E...> {}; // forwarding refs
-template <typename...E> struct lvals : tupl<E...> {}; // lvalue refs
-template <typename...E> struct rvals : tupl<E...> {}; // rvalue refs
-template <typename...E> struct cvals : tupl<E...> {}; // const view vals
-/*
-   CTAD guides
-*/
-template <typename...E> fwds(E&&...) -> fwds<E&&...>;
-template <typename...E> lvals(E&...) -> lvals<E&...>;
-template <rvalue... RV> rvals(RV&&...) -> rvals<RV&&...>;
-template <typename...E> cvals(E const&...) -> cvals<tupl_view_t<E>...>;
-//
+
+#include "tupl_impl_forward_decls.hpp"
 
 #define TUPL_TYPE_ID XD
 #define TUPL_DATA_ID xD
@@ -144,69 +97,7 @@ struct TUPL_ID<XREPEAT(VREPEAT_INDEX,TUPL_TYPE_ID,COMMA)>
 
 #else // TUPL_PASS == 2
 
-/*
-  get<I>(t)
-*/
-template <size_t I, tuplish T>
-constexpr auto get(T&& t) noexcept
--> apply_cvref_t<T&&,type_list_element_t<I,tupl_t<T>>>
-  requires (I < tupl_size_v<T>)
-{
-  using tuplt = tupl_t<T>;
-  using ret_t = apply_cvref_t<T&&,type_list_element_t<I,tuplt>>;
-  using ptr_t = std::remove_reference_t<ret_t>*;
-
-  struct E{constexpr E(...){}};
-  struct At{ E a[I+1]; ptr_t e; E b[tupl_size_v<tuplt>-I]; };
-
-  return map(static_cast<tupl_like_t<T>&>(t), [](auto&...a) noexcept
-    -> ret_t
-  {
-    NO_WARN_MISSING_BRACES()
-      return static_cast<ret_t>(*At{0,&a...,0}.e);
-    END_NO_WARN_MISSING_BRACES()
-  });
-}
-
-/*
-   get<T>(t)
-*/
-template <typename X>
-constexpr auto&& get(tuplish auto&& t) noexcept
-{
-  return get<type_list_indexof<X, tupl_t<decltype(t)>>>((decltype(t))t);
-}
-
-/*
-  tupl_mptr<I,T> member pointer getter
-*/
-template <size_t I, typename T> // defined for tupl or lupl derived
-auto tupl_mptr = NOT_DEFINED(tupl_mptr<I,T>);
-
-template <size_t I, typename T>
-  requires tupl_or_lupl<tupl_t<T>>
-constexpr auto tupl_mptr<I,T>
- = [] {
-  static_assert(I < tupl_size_v<T>, "tupl_mptr index out of bounds");
-# define ELSE() else
-# define MACRO(N) if constexpr(I==HEXLIT(N))return&T::TUPL_DATA_ID(N);
-  XREPEAT(TUPL_MAX_ARITY,MACRO,ELSE)
-# undef MACRO
-# undef ELSE
-  UNREACHABLE()
-}();
-
-/*
-  tupl_mptrs<T> return a tupl of member pointers
-*/
-template <typename T, size_t...I>
-  requires tupl_or_lupl<tupl_t<T>>
-constexpr auto tupl_mptrs = tupl_mptrs<T,I...,sizeof...(I)>;
-//
-template <typename T, size_t...I>
-  requires (tupl_or_lupl<tupl_t<T>> && tupl_size_v<T> == sizeof...(I))
-constexpr auto tupl_mptrs<T,I...> = tupl{tupl_mptr<I,T>...};
-
+#include "tupl_impl_getters.hpp"
 #include "tupl_impl_assign.hpp"
 #include "tupl_impl_compare.hpp"
 
