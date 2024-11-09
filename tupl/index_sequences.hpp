@@ -3,6 +3,8 @@
  SPDX-License-Identifier: BSL-1.0
  Repo: https://github.com/Lemuriad/tupl
 */
+#ifndef LML_TUPL_INDEX_SEQUENCES_HPP
+#define LML_TUPL_INDEX_SEQUENCES_HPP
 
 #include "namespace.hpp"
 
@@ -89,3 +91,5 @@ template <int...siz>
 using ij_seq = val_seq_map<impl::ij_map<siz...>{},(siz+...+0)>;
 
 #include "namespace.hpp"
+
+#endif

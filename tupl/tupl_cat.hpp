@@ -3,6 +3,9 @@
  SPDX-License-Identifier: BSL-1.0
  Repo: https://github.com/Lemuriad/tupl
 */
+#ifndef LML_TUPL_CAT_HPP
+#define LML_TUPL_CAT_HPP
+
 #include "index_sequences.hpp"
 #include "tupl.hpp"
 
@@ -149,3 +152,5 @@ constexpr auto cat(TL&&...tl) noexcept(
 #include "namespace.hpp"
 
 #include "tupl_platform.hpp"
+
+#endif
